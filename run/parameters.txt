@@ -1,0 +1,56 @@
+#------------------------------------------------------------
+# Model parameters ------------------------------------------
+#------------------------------------------------------------
+
+x_samples = 201      
+y_samples = 201      
+z_samples = 201
+
+model_spacing = 10.0
+
+model_file = ../inputs/models/vp.bin 
+
+#------------------------------------------------------------
+# Geometry --------------------------------------------------
+#------------------------------------------------------------
+
+SPS = ../inputs/geometry/SPS.txt 
+RPS = ../inputs/geometry/RPS.txt 
+XPS = ../inputs/geometry/XPS.txt 
+
+#------------------------------------------------------------
+# Modeling parameters ---------------------------------------
+#------------------------------------------------------------
+
+time_samples = 1001
+time_spacing = 1e-3
+
+max_frequency = 10.0
+
+abc_length = 1000
+abc_factor = 1e-3 
+
+mod_output_folder = ../outputs/data/
+
+#------------------------------------------------------------
+# Inversion parameters --------------------------------------
+#------------------------------------------------------------
+
+inv_rbc_ratio = 200
+inv_rbc_varVp = 1000
+inv_rbc_length = 500
+
+inv_input_folder = ../inputs/data/
+inv_output_folder = ../outputs/models/
+inv_residuo_folder = ../outputs/residuo/
+
+#------------------------------------------------------------
+# Migration parameters --------------------------------------
+#------------------------------------------------------------
+
+mig_rbc_ratio = 100
+mig_rbc_varVp = 1000
+mig_rbc_length = 500
+
+mig_input_folder = ../inputs/data/
+mig_output_folder = ../outputs/seismic/

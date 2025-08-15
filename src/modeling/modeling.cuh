@@ -83,14 +83,14 @@ public:
     void set_parameters();
     void initialization();
     void forward_solver();
-    void set_seismogram();
+    void get_seismogram();
     void show_information();    
     void export_output_data();
 };
 
-// __global__ void compute_pressure(float * Vp, float * P, float * Pold, float * d_wavelet, float * d_b1d, float * d_b2d, int sIdx, int sIdz, int tId, int nt, int nb, int nxx, int nzz, float dh, float dt, bool ABC);
-// __global__ void compute_seismogram(float * P, int * d_rIdx, int * d_rIdz, float * seismogram, int spread, int tId, int tlag, int nt, int nzz);
-// __device__ float get_boundary_damper(float * d1D, float * d2D, int i, int j, int nxx, int nzz, int nb);
+__global__ void compute_pressure(float * Vp, float * P, float * Pold, float * d_wavelet, float * d_b1d, float * d_b2d, float * d_b3d, int sIdx, int sIdy, int sIdz, int tId, int nt, int nb, int nxx, int nyy, int nzz, float dh, float dt, bool ABC);
+__global__ void compute_seismogram(float * P, int * d_rIdx, int * d_rIdy, int * d_rIdz, float * seismogram, int spread, int tId, int tlag, int nt, int nxx, int nzz);
+__device__ float get_boundary_damper(float * damp1D, float * damp2D, float * damp3D, int i, int j, int k, int nxx, int nyy, int nzz, int nb);
 
 // __device__ float get_random_value(float velocity, float function, float parameter, int index, float varVp);
 // __global__ void random_boundary_bg(float * Vp, int nxx, int nzz, int nb, float varVp);
