@@ -1,0 +1,44 @@
+#------------------------------------------------------------
+# Model parameters ------------------------------------------
+#------------------------------------------------------------
+
+x_samples = 101      
+y_samples = 101      
+z_samples = 51
+
+model_spacing = 10.0
+
+model_file = ../inputs/models/migration_test_vp.bin 
+
+#------------------------------------------------------------
+# Geometry --------------------------------------------------
+#------------------------------------------------------------
+
+SPS = ../inputs/geometry/migration_test_SPS.txt 
+RPS = ../inputs/geometry/migration_test_RPS.txt 
+XPS = ../inputs/geometry/migration_test_XPS.txt 
+
+#------------------------------------------------------------
+# Modeling parameters ---------------------------------------
+#------------------------------------------------------------
+
+time_samples = 1001
+time_spacing = 1e-3
+
+max_frequency = 30.0
+
+abc_length = 2000
+abc_factor = 1e-3 
+
+mod_output_folder = ../outputs/data/
+
+#------------------------------------------------------------
+# Migration parameters --------------------------------------
+#------------------------------------------------------------
+
+mig_rbc_ratio = 100
+mig_rbc_varVp = 1000
+mig_rbc_length = 500
+
+mig_input_folder = ../inputs/data/
+mig_output_folder = ../outputs/seismic/
