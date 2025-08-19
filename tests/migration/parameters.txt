@@ -25,7 +25,7 @@ XPS = ../inputs/geometry/migration_test_XPS.txt
 time_samples = 1001
 time_spacing = 1e-3
 
-max_frequency = 30.0
+max_frequency = 45.0
 
 abc_length = 2000
 abc_factor = 1e-3 
@@ -36,9 +36,9 @@ mod_output_folder = ../outputs/data/
 # Migration parameters --------------------------------------
 #------------------------------------------------------------
 
-mig_rbc_ratio = 100
+mig_rbc_ratio = 50
 mig_rbc_varVp = 1000
-mig_rbc_length = 500
+mig_rbc_length = 300
 
 mig_input_folder = ../inputs/data/
 mig_output_folder = ../outputs/seismic/

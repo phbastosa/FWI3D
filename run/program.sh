@@ -132,7 +132,7 @@ case "$1" in
     python3 -B $prefix/generate_models.py
     python3 -B $prefix/generate_geometry.py
 
-    # ./../bin/modeling.exe $parameters
+    ./../bin/modeling.exe $parameters
 
     python3 -B $prefix/generate_input_data.py $parameters
 

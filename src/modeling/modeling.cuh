@@ -94,6 +94,6 @@ __device__ float get_boundary_damper(float * damp1D, float * damp2D, float * dam
 
 __device__ float get_random_value(float velocity, float function, float parameter, int index);
 __global__ void random_boundary_bg(float * Vp, int nxx, int nyy, int nzz, int nb, float varVp);
-// __global__ void random_boundary_gp(float * Vp, float * X, float * Z, int nxx, int nzz, float x_max, float z_max, float xb, float zb, float factor, float A, float xc, float zc, float r, float vmax, float vmin, float varVp);
+__global__ void random_boundary_gp(float * vp, float * X, float * Y, float * Z, int nxx, int nyy, int nzz, float x_max, float y_max, float z_max, int nb, float dh, float factor, float A, float xc, float yc, float zc, float r, float vmax, float vmin, float varVp);
 
 # endif

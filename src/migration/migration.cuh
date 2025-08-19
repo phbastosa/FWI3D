@@ -35,6 +35,6 @@ public:
     void export_seismic();
 };
 
-__global__ void RTM(float * Ps, float * Psold, float * Pr, float * Prold, float * Vp, float * seismogram, float * image, float * sumPs, int * rIdx, int * rIdz, int spread, int tId, int tlag, int nxx, int nzz, int nt, float dx, float dt);
+__global__ void RTM(float * Ps, float * Psold, float * Pr, float * Prold, float * Vp, float * seismogram, float * image, float * sumPs, int * rIdx, int * rIdy, int * rIdz, int spread, int tId, int tlag, int nxx, int nyy, int nzz, int nt, float dh, float dt);
 
 # endif

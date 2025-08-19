@@ -522,59 +522,54 @@ void Modeling::set_random_boundary(float * vp, float ratio, float varVp)
     float y_max = (nyy-1)*dh;
     float z_max = (nzz-1)*dh;
 
-    float xb = nb*dh;
-    float yb = nb*dh;
-    float zb = nb*dh;
-
     random_boundary_bg<<<nBlocks,NTHREADS>>>(vp, nxx, nyy, nzz, nb, varVp);
 
-    // std::vector<Point> points = poissonDiskSampling(x_max, y_max, z_max, ratio);
-    // std::vector<Point> target;
+    std::vector<Point> points = poissonDiskSampling(x_max, y_max, z_max, ratio);
+    std::vector<Point> target;
     
-    // for (int index = 0; index < points.size(); index++)
-    // {
-    //     if (!((points[index].x > 0.5f*nb*dh) && (points[index].x < x_max - 0.5f*nb*dh) &&
-    //           (points[index].y > 0.5f*nb*dh) && (points[index].y < y_max - 0.5f*nb*dh) &&
-    //           (points[index].z > 0.5f*nb*dh) && (points[index].z < z_max - 0.5f*nb*dh)))
-    //         target.push_back(points[index]);
-    // }
+    for (int index = 0; index < points.size(); index++)
+    {
+        if (!((points[index].x > 0.5f*nb*dh) && (points[index].x < x_max - 0.5f*nb*dh) &&
+              (points[index].y > 0.5f*nb*dh) && (points[index].y < y_max - 0.5f*nb*dh) &&
+              (points[index].z > 0.5f*nb*dh) && (points[index].z < z_max - 0.5f*nb*dh)))
+            target.push_back(points[index]);
+    }
     
-    // for (int p = 0; p < target.size(); p++)
-    // {
-    //     float xc = target[p].x;
-    //     float yc = target[p].y;
-    //     float zc = target[p].z;
+    for (int p = 0; p < target.size(); p++)
+    {
+        float xc = target[p].x;
+        float yc = target[p].y;
+        float zc = target[p].z;
 
-    //     int xId = (int)(xc / dh);
-    //     int yId = (int)(yc / dh);
-    //     int zId = (int)(zc / dh);
+        float r = std::uniform_real_distribution<float>(0.5f*ratio, ratio)(RBC_RNG);
+        float A = std::uniform_real_distribution<float>(0.5f*varVp, varVp)(RBC_RNG);
 
-    //     float r = std::uniform_real_distribution<float>(0.5f*ratio, ratio)(RBC_RNG);
-    //     float A = std::uniform_real_distribution<float>(0.5f*varVp, varVp)(RBC_RNG);
+        float factor = rand() % 2 == 0 ? -1.0f : 1.0f;
 
-    //     float factor = rand() % 2 == 0 ? -1.0f : 1.0f;
-
-    //     // random_boundary_gp<<<nBlocks,NTHREADS>>>(vp, d_X, d_Z, nxx, nzz, x_max, z_max, xb, zb, factor, A, xc, zc, r, vmax, vmin, varVp);
-    // }
+        random_boundary_gp<<<nBlocks,NTHREADS>>>(vp, d_X, d_Y, d_Z, nxx, nyy, nzz, x_max, y_max, z_max, nb, dh, factor, A, xc, yc, zc, r, vmax, vmin, varVp);
+    }
 }
 
-// __global__ void random_boundary_gp(float * vp, float * X, float * Z, int nxx, int nzz, float x_max, float z_max, float xb, float zb, float factor, float A, float xc, float zc, float r, float vmax, float vmin, float varVp)
-// {
-//     int index = blockIdx.x * blockDim.x + threadIdx.x;
+__global__ void random_boundary_gp(float * vp, float * X, float * Y, float * Z, int nxx, int nyy, int nzz, float x_max, float y_max, float z_max, int nb, float dh, float factor, float A, float xc, float yc, float zc, float r, float vmax, float vmin, float varVp)
+{
+    int index = blockIdx.x * blockDim.x + threadIdx.x;
 
-//     int i = (int)(index % nzz);
-//     int j = (int)(index / nzz);   
+    int k = (int) (index / (nxx*nzz));         
+    int j = (int) (index - k*nxx*nzz) / nzz;   
+    int i = (int) (index - j*nzz - k*nxx*nzz);    
     
-//     if (!((X[j] > xb) && (X[j] < x_max - xb) && 
-//           (Z[i] > zb) && (Z[i] < z_max - zb)))
-//     {
-//         vp[i + j*nzz] += factor*A*expf(-0.5f*(((X[j]-xc)/r)*((X[j]-xc)/r) + 
-//                                               ((Z[i]-zc)/r)*((Z[i]-zc)/r)));
+    if (!((X[j] > (float)(nb)*dh) && (X[j] < x_max - (float)(nb)*dh) &&
+          (Y[k] > (float)(nb)*dh) && (Y[k] < y_max - (float)(nb)*dh) &&
+          (Z[i] > (float)(nb)*dh) && (Z[i] < z_max - (float)(nb)*dh)))
+    {
+        vp[index] += factor*A*expf(-0.5f*(((X[j]-xc)/r)*((X[j]-xc)/r) +
+                                          ((Y[k]-yc)/r)*((Y[k]-yc)/r) +  
+                                          ((Z[i]-zc)/r)*((Z[i]-zc)/r)));
         
-//         vp[i + j*nzz] = vp[i + j*nzz] > vmax + varVp ? vmax + varVp : vp[i + j*nzz];
-//         vp[i + j*nzz] = vp[i + j*nzz] < vmin - varVp ? vmin - varVp : vp[i + j*nzz];         
-//     }   
-// }
+        vp[index] = vp[index] > vmax + varVp ? vmax + varVp : vp[index];
+        vp[index] = vp[index] < vmin - varVp ? vmin - varVp : vp[index];         
+    }   
+}
 
 __global__ void random_boundary_bg(float * vp, int nxx, int nyy, int nzz, int nb, float varVp)
 {
@@ -584,43 +579,46 @@ __global__ void random_boundary_bg(float * vp, int nxx, int nyy, int nzz, int nb
     int j = (int) (index - k*nxx*nzz) / nzz;   
     int i = (int) (index - j*nzz - k*nxx*nzz); 
 
-    if ((i >= nb) && (i < nzz-nb) && (j >= 0) && (j < nb) && (k >= nb) && (k < nyy-nb))
+    if (!((i >= nb) && (i < nzz - nb) &&
+          (j >= nb) && (j < nxx - nb) &&
+          (k >= nb) && (k < nyy - nb)))
     {
-        float f1d = 1.0f - (float)(j) / (float)(nb);
-        
-        int index1 = i + j*nzz + k*nxx*nzz;
-        int index2 = i + (nxx-j-1)*nzz + k*nxx*nzz;     
-        int index3 = i + nb*nzz + k*nxx*nzz;
-        int index4 = i + (nxx-nb)*nzz + k*nxx*nzz;     
+        int ii = min(max(i, nb), nzz - nb - 1);
+        int jj = min(max(j, nb), nxx - nb - 1);
+        int kk = min(max(k, nb), nyy - nb - 1);
 
-        vp[index1] = get_random_value(vp[index3], f1d, varVp, index);
-        vp[index2] = get_random_value(vp[index4], f1d, varVp, index);        
-    }
-    
-    if ((i >= 0) && (i < nb) && (j >= nb) && (j < nxx-nb) && (k >= nb) && (k < nyy-nb))    
-    {
-        float f1d = 1.0f - (float)(i) / (float)(nb);
-        
-        int index1 = i + j*nzz + k*nxx*nzz;
-        int index2 = nzz-i-1 + j*nzz + k*nxx*nzz;     
-        int index3 = nb + j*nzz + k*nxx*nzz;
-        int index4 = nzz-nb + j*nzz + k*nxx*nzz;     
+        int index_ref = ii + jj*nzz + kk*nxx*nzz;
 
-        vp[index1] = get_random_value(vp[index3], f1d, varVp, index);
-        vp[index2] = get_random_value(vp[index4], f1d, varVp, index);
-    }
+        float val = vp[index_ref];
 
-    if ((i >= nb) && (i < nzz-nb) && (j >= nb) && (j < nxx-nb) && (k >= 0) && (k < nb))    
-    {
-        float f1d = 1.0f - (float)(k) / (float)(nb);
-        
-        int index1 = i + j*nzz + k*nxx*nzz;
-        int index2 = i + j*nzz + (nyy-k-1)*nxx*nzz;     
-        int index3 = i + j*nzz + nb*nxx*nzz;
-        int index4 = i + j*nzz + (nyy-nb)*nxx*nzz;     
+        if (j < nb) {
+            float fx = 1.0f - (float)(j) / (float)(nb);
+            val = get_random_value(val, fx, varVp, index);
+        } 
+        else if (j >= nxx - nb) {
+            float fx = 1.0f - (float)(nxx - j - 1) / (float)(nb);
+            val = get_random_value(val, fx, varVp, index);
+        }
 
-        vp[index1] = get_random_value(vp[index3], f1d, varVp, index);
-        vp[index2] = get_random_value(vp[index4], f1d, varVp, index);
+        if (k < nb) {
+            float fy = 1.0f - (float)(k) / (float)(nb);
+            val = get_random_value(val, fy, varVp, index);
+        } 
+        else if (k >= nyy - nb) {
+            float fy = 1.0f - (float)(nyy - k - 1) / (float)(nb);
+            val = get_random_value(val, fy, varVp, index);
+        }
+
+        if (i < nb) {
+            float fz = 1.0f - (float)(i) / (float)(nb);
+            val = get_random_value(val, fz, varVp, index);
+        } 
+        else if (i >= nzz - nb) {
+            float fz = 1.0f - (float)(nzz - i - 1) / (float)(nb);
+            val = get_random_value(val, fz, varVp, index);
+        }
+
+        vp[index] = val;        
     }
 }
 
