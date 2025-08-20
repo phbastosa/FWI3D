@@ -113,6 +113,24 @@ void Migration::export_seismic()
     for (int index = 0; index < nPoints; index++)
         image[index] = image[index] / sumPs[index];
 
+    # pragma omp parallel for    
+    for (int index = 0; index < nPoints; index++)
+    {
+        int k = (int) (index / (nx*nz));         
+        int j = (int) (index - k*nx*nz) / nz;   
+        int i = (int) (index - j*nz - k*nx*nz);      
+
+        if((i > 0) && (i < nz-1) && (j > 0) && (j < nx-1) && (k > 0) && (k < ny-1)) 
+        {
+            float d2I_dx2 = (image[i + (j-1)*nz + k*nx*nz] - 2.0f*image[index] + image[i + (j+1)*nz + k*nx*nz]) / (dh * dh);
+            float d2I_dy2 = (image[i + j*nz + (k-1)*nx*nz] - 2.0f*image[index] + image[i + j*nz + (k+1)*nx*nz]) / (dh * dh);
+            float d2I_dz2 = (image[(i-1) + j*nz + k*nx*nz] - 2.0f*image[index] + image[(i+1) + j*nz + k*nx*nz]) / (dh * dh);
+
+            image[index] = d2I_dx2 + d2I_dy2 + d2I_dz2;
+        }
+        else image[index] = 0.0f;    
+    }
+
     std::string output_file = output_folder + "RTM_section_" + std::to_string(nz) + "x" + std::to_string(nx) + "x" + std::to_string(ny) + ".bin";
     export_binary_float(output_file, image, nPoints);
 }
