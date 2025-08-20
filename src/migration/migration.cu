@@ -126,13 +126,17 @@ void Migration::export_seismic()
             float d2I_dy2 = (image[i + j*nz + (k-1)*nx*nz] - 2.0f*image[index] + image[i + j*nz + (k+1)*nx*nz]) / (dh * dh);
             float d2I_dz2 = (image[(i-1) + j*nz + k*nx*nz] - 2.0f*image[index] + image[(i+1) + j*nz + k*nx*nz]) / (dh * dh);
 
-            image[index] = d2I_dx2 + d2I_dy2 + d2I_dz2;
+            sumPs[index] = d2I_dx2 + d2I_dy2 + d2I_dz2;
         }
-        else image[index] = 0.0f;    
+        else 
+        {
+            image[index] = 0.0f;    
+            sumPs[index] = 0.0f;
+        }
     }
 
     std::string output_file = output_folder + "RTM_section_" + std::to_string(nz) + "x" + std::to_string(nx) + "x" + std::to_string(ny) + ".bin";
-    export_binary_float(output_file, image, nPoints);
+    export_binary_float(output_file, sumPs, nPoints);
 }
 
 __global__ void RTM(float * Ps, float * Psold, float * Pr, float * Prold, float * Vp, float * seismogram, float * image, float * sumPs, int * rIdx, int * rIdy, int * rIdz, int spread, int tId, int tlag, int nxx, int nyy, int nzz, int nt, float dh, float dt)
