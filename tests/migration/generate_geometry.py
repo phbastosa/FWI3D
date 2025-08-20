@@ -1,16 +1,16 @@
 import numpy as np
 
-nsx = 3
-nsy = 3
+nsx = 4
+nsy = 4
 
-nrx = 41 
-nry = 41
+nrx = 9 
+nry = 9
 
 ns = nsx*nsy
 nr = nrx*nry
 
-sx, sy = np.meshgrid(np.linspace(310, 690, nsx), 
-                     np.linspace(310, 690, nsy))
+sx, sy = np.meshgrid(np.linspace(350, 650, nsx), 
+                     np.linspace(350, 650, nsy))
 
 rx, ry = np.meshgrid(np.linspace(100, 900, nrx), 
                      np.linspace(100, 900, nry))
@@ -21,11 +21,11 @@ XPS = np.zeros((ns, 3), dtype = int)
 
 SPS[:,0] = np.reshape(sx, [ns], order = "F")
 SPS[:,1] = np.reshape(sy, [ns], order = "F")
-SPS[:,2] = np.zeros(ns)
+SPS[:,2] = np.zeros(ns) + 200
 
 RPS[:,0] = np.reshape(rx, [nr], order = "C")
 RPS[:,1] = np.reshape(ry, [nr], order = "C")
-RPS[:,2] = np.zeros(nr)
+RPS[:,2] = np.zeros(nr) + 200
 
 XPS[:, 0] = np.arange(ns)
 XPS[:, 1] = np.zeros(ns) 

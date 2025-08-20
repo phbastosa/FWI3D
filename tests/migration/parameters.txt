@@ -4,7 +4,7 @@
 
 x_samples = 101      
 y_samples = 101      
-z_samples = 51
+z_samples = 101
 
 model_spacing = 10.0
 
@@ -22,13 +22,13 @@ XPS = ../inputs/geometry/migration_test_XPS.txt
 # Modeling parameters ---------------------------------------
 #------------------------------------------------------------
 
-time_samples = 1001
+time_samples = 1501
 time_spacing = 1e-3
 
 max_frequency = 45.0
 
-abc_length = 2000
-abc_factor = 1e-3 
+abc_length = 1000
+abc_factor = 2e-4 
 
 mod_output_folder = ../outputs/data/
 

@@ -138,7 +138,7 @@ case "$1" in
 
     ./../bin/migration.exe $parameters
 
-    # python3 -B $prefix/generate_figures.py $parameters
+    python3 -B $prefix/generate_figures.py $parameters
 
 	exit 0
 ;;

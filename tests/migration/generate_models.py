@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 x_max = 1e3
 y_max = 1e3
-z_max = 5e2
+z_max = 1e3
 
 dh = 10.0
 
@@ -13,9 +13,9 @@ nz = int((z_max / dh) + 1)
 
 Vp = np.zeros((nz,nx,ny)) + 1500
 
-hx = int(0.50*nx)
-hy = int(0.50*ny)
-hz = int(0.75*nz)
+hx = int(0.5*nx)
+hy = int(0.5*ny)
+hz = int(0.8*nz)
 
 Vp[hz-1:hz+2,hx-1:hx+2,hy-1:hy+2] += 500
 

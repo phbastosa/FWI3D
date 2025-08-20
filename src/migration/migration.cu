@@ -128,11 +128,7 @@ void Migration::export_seismic()
 
             sumPs[index] = d2I_dx2 + d2I_dy2 + d2I_dz2;
         }
-        else 
-        {
-            image[index] = 0.0f;    
-            sumPs[index] = 0.0f;
-        }
+        else sumPs[index] = 0.0f;
     }
 
     std::string output_file = output_folder + "RTM_section_" + std::to_string(nz) + "x" + std::to_string(nx) + "x" + std::to_string(ny) + ".bin";
