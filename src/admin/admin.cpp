@@ -119,40 +119,40 @@ float bessel_i0(float x)
     return sum;
 }
 
-std::vector<std::vector<std::vector<float>>> kaiser_weights(float x, float y, float z, int ix0, int iy0, int iz0, float dx, float dy, float dz) 
+std::vector<std::vector<std::vector<float>>> hicks_weights(float x, float y, float z, int ix0, int iy0, int iz0, float dh) 
 {
     const int N = 8;
     const float beta = 6.41f;
 
     std::vector<std::vector<std::vector<float>>> weights(N, std::vector<std::vector<float>>(N, std::vector<float>(N)));
 
-    float rmax = 2.0f*sqrtf(dx*dx + dy*dy + dz*dz);
+    float rmax = sqrtf(2.0f*dh*dh);
     float I0_beta = bessel_i0(beta);
 
     float sum = 0.0f;
 
     for (int k = 0; k < N; ++k) 
     {
-        float yk = (iy0 + k - 3) * dy;
-        float dyr = (y - yk) / dy;
+        float yk = (iy0 + k - 3) * dh;
+        float dyr = (y - yk) / dh;
 
         for (int j = 0; j < N; ++j) 
         {
-            float xj = (ix0 + j - 3) * dx;
-            float dxr = (x - xj) / dx;
+            float xj = (ix0 + j - 3) * dh;
+            float dxr = (x - xj) / dh;
 
             for (int i = 0; i < N; ++i) 
             {    
-                float zi = (iz0 + i - 3) * dz;
-                float dzr = (z - zi) / dz;
+                float zi = (iz0 + i - 3) * dh;
+                float dzr = (z - zi) / dh;
         
                 float rz = z - zi;
                 float rx = x - xj;
                 float ry = y - yk;
 
-                float r = sqrtf(rx * rx + ry * ry + rz * rz);
+                float r = sqrtf(rx*rx + ry*ry + rz*rz);
 
-                float rnorm = 2.0f * r / rmax;
+                float rnorm = r / rmax;
 
                 float wij = 0.0f;
                 if (rnorm <= 1.0f) 
