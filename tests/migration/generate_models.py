@@ -13,10 +13,8 @@ nz = int((z_max / dh) + 1)
 
 Vp = np.zeros((nz,nx,ny)) + 1500
 
-hx = int(0.5*nx)
-hy = int(0.5*ny)
 hz = int(0.8*nz)
 
-Vp[hz-1:hz+2,hx-1:hx+2,hy-1:hy+2] += 500
+Vp[hz-5:hz+5,:,:] += 500
 
 Vp.flatten("F").astype(np.float32, order = "F").tofile(f"../inputs/models/migration_test_vp.bin")

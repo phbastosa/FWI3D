@@ -79,7 +79,6 @@ void Migration::backward_propagation()
 
     show_information();
 
-    initialization();
     set_seismic_source();
 
     cudaMemset(d_Pr, 0.0f, volsize*sizeof(float));
@@ -120,15 +119,10 @@ void Migration::export_seismic()
         int j = (int) (index - k*nx*nz) / nz;   
         int i = (int) (index - j*nz - k*nx*nz);      
 
-        if((i > 0) && (i < nz-1) && (j > 0) && (j < nx-1) && (k > 0) && (k < ny-1)) 
-        {
-            float d2I_dx2 = (image[i + (j-1)*nz + k*nx*nz] - 2.0f*image[index] + image[i + (j+1)*nz + k*nx*nz]) / (dh * dh);
-            float d2I_dy2 = (image[i + j*nz + (k-1)*nx*nz] - 2.0f*image[index] + image[i + j*nz + (k+1)*nx*nz]) / (dh * dh);
-            float d2I_dz2 = (image[(i-1) + j*nz + k*nx*nz] - 2.0f*image[index] + image[(i+1) + j*nz + k*nx*nz]) / (dh * dh);
-
-            sumPs[index] = d2I_dx2 + d2I_dy2 + d2I_dz2;
-        }
-        else sumPs[index] = 0.0f;
+        if((i > 0) && (i < nz-1)) 
+            sumPs[index] = (image[index-1] - 2.0f*image[index] + image[index+1]) / (dh * dh);
+        else 
+            sumPs[index] = 0.0f;
     }
 
     std::string output_file = output_folder + "RTM_section_" + std::to_string(nz) + "x" + std::to_string(nx) + "x" + std::to_string(ny) + ".bin";
@@ -145,7 +139,10 @@ __global__ void RTM(float * Ps, float * Psold, float * Pr, float * Prold, float 
 
     if ((index == 0) && (tId < nt))
         for (int rId = 0; rId < spread; rId++)
-            Pr[rIdz[rId] + rIdx[rId]*nzz + rIdy[rId]*nxx*nzz] += seismogram[(nt-tId-1) + rId*nt] / (dh*dh); 
+        {
+            Pr[(rIdz[rId]+1) + rIdx[rId]*nzz + rIdy[rId]*nxx*nzz] += seismogram[(nt-tId-1) + rId*nt] / (dh*dh*dh); 
+            Pr[(rIdz[rId]-1) + rIdx[rId]*nzz + rIdy[rId]*nxx*nzz] += seismogram[(nt-tId-1) + rId*nt] / (dh*dh*dh); 
+        }    
     
     if((i > 3) && (i < nzz-4) && (j > 3) && (j < nxx-4) && (k > 3) && (k < nyy-4)) 
     {

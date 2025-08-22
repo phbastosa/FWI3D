@@ -29,8 +29,6 @@ std::string catch_parameter(std::string target, std::string file);
 
 std::vector<std::string> split(std::string s, char delimiter);
 
-std::vector<std::vector<std::vector<float>>> hicks_weights(float x, float y, float z, int ix0, int iy0, int iz0, float dh); 
-
 std::vector<Point> poissonDiskSampling(float x_max, float y_max, float z_max, float radius); 
 
 # endif

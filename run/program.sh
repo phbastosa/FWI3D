@@ -13,7 +13,7 @@ inversion_main="../src/inversion_main.cpp"
 migration="../src/migration/migration.cu"
 migration_main="../src/migration_main.cpp"
 
-flags="-Xcompiler -fopenmp --std=c++11 -lm -lfftw3 -O3"
+flags="-Xcompiler -fopenmp --std=c++11 -lm -O3"
 
 # Main dialogue ---------------------------------------------------------------------------------------
 
@@ -58,8 +58,8 @@ case "$1" in
     # echo -e "../bin/\033[31minversion.exe\033[m" 
     # nvcc $admin $geometry $modeling $inversion $inversion_main $flags -o ../bin/inversion.exe
 
-    # echo -e "../bin/\033[31mmigration.exe\033[m"
-    # nvcc $admin $geometry $modeling $migration $migration_main $flags -o ../bin/migration.exe
+    echo -e "../bin/\033[31mmigration.exe\033[m"
+    nvcc $admin $geometry $modeling $migration $migration_main $flags -o ../bin/migration.exe
 
     exit 0
 ;;
