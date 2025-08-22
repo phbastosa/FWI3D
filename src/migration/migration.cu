@@ -139,10 +139,7 @@ __global__ void RTM(float * Ps, float * Psold, float * Pr, float * Prold, float 
 
     if ((index == 0) && (tId < nt))
         for (int rId = 0; rId < spread; rId++)
-        {
-            Pr[(rIdz[rId]+1) + rIdx[rId]*nzz + rIdy[rId]*nxx*nzz] += seismogram[(nt-tId-1) + rId*nt] / (dh*dh*dh); 
-            Pr[(rIdz[rId]-1) + rIdx[rId]*nzz + rIdy[rId]*nxx*nzz] += seismogram[(nt-tId-1) + rId*nt] / (dh*dh*dh); 
-        }    
+            Pr[rIdz[rId] + rIdx[rId]*nzz + rIdy[rId]*nxx*nzz] += seismogram[(nt-tId-1) + rId*nt] / (dh*dh*dh); 
     
     if((i > 3) && (i < nzz-4) && (j > 3) && (j < nxx-4) && (k > 3) && (k < nyy-4)) 
     {
