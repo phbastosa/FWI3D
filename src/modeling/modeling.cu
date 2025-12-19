@@ -323,7 +323,7 @@ __global__ void compute_pressure(float * Vp, float * P, float * Pold, float * wa
     int i = (int) (index - j*nzz - k*nxx*nzz); 
 
     if ((index == 0) && (tId < nt))
-        P[sIdz + sIdx*nzz + sIdy*nxx*nzz] += wavelet[tId] / (dh * dh * dh);
+        P[sIdz + sIdx*nzz + sIdy*nxx*nzz] += wavelet[tId] / (dh*dh*dh);
 
     if((i > 3) && (i < nzz-4) && (j > 3) && (j < nxx-4) && (k > 3) && (k < nyy-4)) 
     {
@@ -528,20 +528,22 @@ void Modeling::set_coordinates()
 
 void Modeling::set_random_boundary(float * vp, float ratio, float varVp)
 {
-    float x_max = (nxx-1)*dh;
-    float y_max = (nyy-1)*dh;
-    float z_max = (nzz-1)*dh;
+    float x_max = (float)(nxx-1)*dh;
+    float y_max = (float)(nyy-1)*dh;
+    float z_max = (float)(nzz-1)*dh;
 
     random_boundary_bg<<<nBlocks,NTHREADS>>>(vp, nxx, nyy, nzz, nb, varVp);
 
     std::vector<Point> points = poissonDiskSampling(x_max, y_max, z_max, ratio);
     std::vector<Point> target;
     
+    float fnb = (float)(nb)*dh;
+
     for (int index = 0; index < points.size(); index++)
     {
-        if (!((points[index].x > 0.5f*nb*dh) && (points[index].x < x_max - 0.5f*nb*dh) &&
-              (points[index].y > 0.5f*nb*dh) && (points[index].y < y_max - 0.5f*nb*dh) &&
-              (points[index].z > 0.5f*nb*dh) && (points[index].z < z_max - 0.5f*nb*dh)))
+        if (!((points[index].x > 0.5f*fnb) && (points[index].x < x_max - 0.5f*fnb) &&
+              (points[index].y > 0.5f*fnb) && (points[index].y < y_max - 0.5f*fnb) &&
+              (points[index].z > 0.5f*fnb) && (points[index].z < z_max - 0.5f*fnb)))
             target.push_back(points[index]);
     }
     
@@ -568,9 +570,11 @@ __global__ void random_boundary_gp(float * vp, float * X, float * Y, float * Z, 
     int j = (int) (index - k*nxx*nzz) / nzz;   
     int i = (int) (index - j*nzz - k*nxx*nzz);    
     
-    if (!((X[j] > (float)(nb)*dh) && (X[j] < x_max - (float)(nb)*dh) &&
-          (Y[k] > (float)(nb)*dh) && (Y[k] < y_max - (float)(nb)*dh) &&
-          (Z[i] > (float)(nb)*dh) && (Z[i] < z_max - (float)(nb)*dh)))
+    float fnb = (float)(nb)*dh;
+
+    if (!((X[j] > fnb) && (X[j] < x_max - fnb) &&
+          (Y[k] > fnb) && (Y[k] < y_max - fnb) &&
+          (Z[i] > fnb) && (Z[i] < z_max - fnb)))
     {
         vp[index] += factor*A*expf(-0.5f*(((X[j]-xc)/r)*((X[j]-xc)/r) +
                                           ((Y[k]-yc)/r)*((Y[k]-yc)/r) +  

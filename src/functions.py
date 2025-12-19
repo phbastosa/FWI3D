@@ -58,7 +58,7 @@ def plot_model_3D(model, dh, slices, **kwargs):
     [z, x, y] = scale*(min_model_distance / max_model_distance) * model_shape / max_model_distance
 
     px = 1.0 / plt.rcParams['figure.dpi']  
-    ticks = np.array([3, 7, 7], dtype = int)
+    ticks = np.array([5, 7, 7], dtype = int)
 
     fig = plt.figure(figsize = (900*px, 780*px))
 
@@ -206,18 +206,18 @@ def plot_model_3D(model, dh, slices, **kwargs):
         else:
             
             ax.imshow(ims[k], aspect = 'auto', cmap = cmap, vmin = vmin, vmax = vmax)    
-            
-            ax.plot(xSlices[k][0], xSlices[k][1], xSlices[k][2], linewidth = 0.5)
-            ax.plot(ySlices[k][0], ySlices[k][1], ySlices[k][2], linewidth = 0.5)
-            
+                        
             if eikonal_defined:
                 ax.contour(eiks[k], levels = eikonal_levels, colors = eikonal_colors, linestyles = "dashed")
 
             if nodes_defined:
-                ax.plot(xnode[k], ynode[k], "o", markersize = 5, color = "blue")
+                ax.plot(xnode[k], ynode[k], "o", markersize = 5, color = "gray")
             
             if shots_defined:
                 ax.plot(xshot[k], yshot[k], "*", markersize = 5, color = "green")
+
+            ax.plot(xSlices[k][0], xSlices[k][1], xSlices[k][2], linewidth = 0.5)
+            ax.plot(ySlices[k][0], ySlices[k][1], ySlices[k][2], linewidth = 0.5)
 
             ax.tick_params(direction = xTickDirection[k], axis='x') 
             ax.tick_params(direction = yTickDirection[k], axis='y') 

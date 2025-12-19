@@ -19,6 +19,7 @@ void Migration::set_parameters()
     set_coordinates();
 
     input_folder = catch_parameter("mig_input_folder", parameters);
+    input_prefix = catch_parameter("mig_input_prefix", parameters);    
     output_folder = catch_parameter("mig_output_folder", parameters);
 
     image = new float[nPoints]();
@@ -95,7 +96,7 @@ void Migration::backward_propagation()
 
 void Migration::set_seismic_source()
 {
-    std::string data_file = data_folder + "seismogram_nt" + std::to_string(nt) + "_nr" + std::to_string(geometry->spread) + "_" + std::to_string(int(1e6f*dt)) + "us_shot_" + std::to_string(srcId+1) + ".bin";
+    std::string data_file = input_folder + input_prefix + std::to_string(srcId+1) + ".bin";
     import_binary_float(data_file, seismogram, nt*geometry->spread);
     cudaMemcpy(d_seismogram, seismogram, nt*geometry->spread*sizeof(float), cudaMemcpyHostToDevice);
 }

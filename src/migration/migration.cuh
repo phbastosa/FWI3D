@@ -22,6 +22,7 @@ private:
 
     std::string stage_info;
     std::string input_folder;
+    std::string input_prefix;
     std::string output_folder;
     
     void show_information();

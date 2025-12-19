@@ -4,31 +4,31 @@
 
 x_samples = 201      
 y_samples = 201      
-z_samples = 201
+z_samples = 81
 
-model_spacing = 10.0
+model_spacing = 25.0
 
-model_file = ../inputs/models/vp.bin 
+model_file = ../inputs/models/test_vp.bin 
 
 #------------------------------------------------------------
 # Geometry --------------------------------------------------
 #------------------------------------------------------------
 
-SPS = ../inputs/geometry/SPS.txt 
-RPS = ../inputs/geometry/RPS.txt 
-XPS = ../inputs/geometry/XPS.txt 
+SPS = ../inputs/geometry/test_SPS.txt 
+RPS = ../inputs/geometry/test_RPS.txt 
+XPS = ../inputs/geometry/test_XPS.txt 
 
 #------------------------------------------------------------
 # Modeling parameters ---------------------------------------
 #------------------------------------------------------------
 
-time_samples = 1001
-time_spacing = 1e-3
+time_samples = 2001
+time_spacing = 2e-3
 
-max_frequency = 10.0
+max_frequency = 15.0
 
-abc_length = 1000
-abc_factor = 1e-3 
+abc_length = 1250
+abc_factor = 0.0045 
 
 mod_output_folder = ../outputs/data/
 
@@ -38,7 +38,7 @@ mod_output_folder = ../outputs/data/
 
 inv_rbc_ratio = 200
 inv_rbc_varVp = 1000
-inv_rbc_length = 500
+inv_rbc_length = 800
 
 inv_input_folder = ../inputs/data/
 inv_output_folder = ../outputs/models/
@@ -48,9 +48,10 @@ inv_residuo_folder = ../outputs/residuo/
 # Migration parameters --------------------------------------
 #------------------------------------------------------------
 
-mig_rbc_ratio = 100
+mig_rbc_ratio = 200
 mig_rbc_varVp = 1000
-mig_rbc_length = 500
+mig_rbc_length = 800
 
 mig_input_folder = ../inputs/data/
+mig_input_prefix = test_data_shot_
 mig_output_folder = ../outputs/seismic/
