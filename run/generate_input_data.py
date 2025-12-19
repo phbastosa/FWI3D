@@ -25,7 +25,7 @@ time_delay = 0.4
 
 timeId = np.arange(nt)
 
-for sId in range(ns): 
+for sId in range(1): 
 
     file = f"seismogram_nt{nt}_nr{nr}_{dt*1e6:.0f}us_shot_{sId+1}.bin" 
 

@@ -6,6 +6,12 @@
 
 # include "../geometry/geometry.hpp"
 
+# define FDM1 0.001785714285 
+# define FDM2 0.025396825396  
+# define FDM3 0.200000000000
+# define FDM4 1.600000000000
+# define FDM5 2.847222222222
+
 # define WIDTH 80
 # define NTHREADS 256
 
@@ -66,7 +72,7 @@ protected:
     void expand_boundary(float * input, float * output);
     void reduce_boundary(float * input, float * output);
 
-    void set_random_boundary(float * vp, float ratio, float varVp);
+    void set_random_boundary(float * Vp, float ratio, float varVp);
 
 public:
 
@@ -81,15 +87,14 @@ public:
     void forward_solver();
     void get_seismogram();
     void show_information();    
-    void export_output_data();
 };
 
-__global__ void compute_pressure(float * Vp, float * P, float * Pold, float * wavelet, float * b1d, float * b2d, float * b3d, int sIdx, int sIdy, int sIdz, int tId, int nt, int nb, int nxx, int nyy, int nzz, float dh, float dt, bool ABC);
+__global__ void compute_pressure(float * Vp, float * P, float * Pold, float * wavelet, float * b1d, float * b2d, float * b3d, int sIdx, int sIdy, int sIdz, int tId, int nt, int nb, int nxx, int nyy, int nzz, float idh2, float idh3, float dt, bool ABC);
 __global__ void compute_seismogram(float * P, int * rIdx, int * rIdy, int * rIdz, float * seismogram, int spread, int tId, int tlag, int nt, int nxx, int nzz);
 __device__ float get_boundary_damper(float * b1d, float * b2d, float * b3d, int i, int j, int k, int nxx, int nyy, int nzz, int nb);
 
 __device__ float get_random_value(float velocity, float function, float parameter, int index);
 __global__ void random_boundary_bg(float * Vp, int nxx, int nyy, int nzz, int nb, float varVp);
-__global__ void random_boundary_gp(float * vp, float * X, float * Y, float * Z, int nxx, int nyy, int nzz, float x_max, float y_max, float z_max, int nb, float dh, float factor, float A, float xc, float yc, float zc, float r, float vmax, float vmin, float varVp);
+__global__ void random_boundary_gp(float * Vp, float * X, float * Y, float * Z, int nxx, int nyy, int nzz, float x_max, float y_max, float z_max, int nb, float dh, float factor, float A, float xc, float yc, float zc, float r, float vmax, float vmin, float varVp);
 
 # endif

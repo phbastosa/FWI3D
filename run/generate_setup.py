@@ -24,8 +24,8 @@ dt = float(pyf.catch_parameter(parameters, "time_spacing"))
 vp = np.array([1500, 1800, 2000])
 z = np.array([750, 1000])
 
-nsx = 11
-nsy = 11
+nsx = 6
+nsy = 6
 
 nrx = 201
 nry = 201
@@ -37,8 +37,8 @@ SPS = np.zeros((ns, 3))
 RPS = np.zeros((nr, 3))
 XPS = np.zeros((ns, 3))
 
-sx, sy = np.meshgrid(np.linspace(500, 4500, nsx), 
-                     np.linspace(500, 4500, nsy))
+sx, sy = np.meshgrid(np.linspace(1000, 4000, nsx), 
+                     np.linspace(1000, 4000, nsy))
 
 rx, ry = np.meshgrid(np.linspace(0, 5000, nrx), 
                      np.linspace(0, 5000, nry))
@@ -71,7 +71,7 @@ for i in range(len(vp)):
 Vp.flatten("F").astype(np.float32, order = "F").tofile(model_file)
 
 dh = np.array([dh, dh, dh])
-slices = np.array([0.1*nz, 0.5*ny, 0.5*nx], dtype = int)
+slices = np.array([0.05*nz, 0.2*ny, 0.2*nx], dtype = int)
 
 pyf.plot_model_3D(Vp, dh, slices, shots = SPS_path, scale = 1.4, 
                   nodes = RPS_path, adjx = 0.7, dbar = 1.4, cmap = "jet",

@@ -304,9 +304,12 @@ void Modeling::forward_solver()
     cudaMemset(d_P, 0.0f, volsize*sizeof(float));
     cudaMemset(d_Pold, 0.0f, volsize*sizeof(float));
 
+    float idh2 = 1.0f / (dh*dh);    
+    float idh3 = 1.0f / (dh*dh*dh);
+
     for (int tId = 0; tId < tlag + nt; tId++)
     {
-        compute_pressure<<<nBlocks, NTHREADS>>>(d_Vp, d_P, d_Pold, d_wavelet, d_b1d, d_b2d, d_b3d, sIdx, sIdy, sIdz, tId, nt, nb, nxx, nyy, nzz, dh, dt, ABC);
+        compute_pressure<<<nBlocks, NTHREADS>>>(d_Vp, d_P, d_Pold, d_wavelet, d_b1d, d_b2d, d_b3d, sIdx, sIdy, sIdz, tId, nt, nb, nxx, nyy, nzz, idh2, idh3, dt, ABC);
         
         compute_seismogram<<<sBlocks, NTHREADS>>>(d_P, d_rIdx, d_rIdy, d_rIdz, d_seismogram, geometry->spread, tId, tlag, nt, nxx, nzz);     
 
@@ -314,7 +317,7 @@ void Modeling::forward_solver()
     }
 }
 
-__global__ void compute_pressure(float * Vp, float * P, float * Pold, float * wavelet, float * b1d, float * b2d, float * b3d, int sIdx, int sIdy, int sIdz, int tId, int nt, int nb, int nxx, int nyy, int nzz, float dh, float dt, bool ABC)
+__global__ void compute_pressure(float * Vp, float * P, float * Pold, float * wavelet, float * b1d, float * b2d, float * b3d, int sIdx, int sIdy, int sIdz, int tId, int nt, int nb, int nxx, int nyy, int nzz, float idh2, float idh3, float dt, bool ABC)
 {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -323,27 +326,27 @@ __global__ void compute_pressure(float * Vp, float * P, float * Pold, float * wa
     int i = (int) (index - j*nzz - k*nxx*nzz); 
 
     if ((index == 0) && (tId < nt))
-        P[sIdz + sIdx*nzz + sIdy*nxx*nzz] += wavelet[tId] / (dh*dh*dh);
+        atomicAdd(&P[sIdz + sIdx*nzz + sIdy*nxx*nzz], idh3*wavelet[tId]);
 
     if((i > 3) && (i < nzz-4) && (j > 3) && (j < nxx-4) && (k > 3) && (k < nyy-4)) 
     {
-        float d2P_dx2 = (- 9.0f*(P[i + (j-4)*nzz + k*nxx*nzz] + P[i + (j+4)*nzz + k*nxx*nzz])
-                     +   128.0f*(P[i + (j-3)*nzz + k*nxx*nzz] + P[i + (j+3)*nzz + k*nxx*nzz])
-                     -  1008.0f*(P[i + (j-2)*nzz + k*nxx*nzz] + P[i + (j+2)*nzz + k*nxx*nzz])
-                     +  8064.0f*(P[i + (j-1)*nzz + k*nxx*nzz] + P[i + (j+1)*nzz + k*nxx*nzz])
-                     - 14350.0f*(P[i + j*nzz + k*nxx*nzz]))/(5040.0f*dh*dh);
+        float d2P_dx2 = idh2*(-FDM1*(P[i + (j-4)*nzz + k*nxx*nzz] + P[i + (j+4)*nzz + k*nxx*nzz])
+                              +FDM2*(P[i + (j-3)*nzz + k*nxx*nzz] + P[i + (j+3)*nzz + k*nxx*nzz])
+                              -FDM3*(P[i + (j-2)*nzz + k*nxx*nzz] + P[i + (j+2)*nzz + k*nxx*nzz])
+                              +FDM4*(P[i + (j-1)*nzz + k*nxx*nzz] + P[i + (j+1)*nzz + k*nxx*nzz])
+                              -FDM5*(P[i + j*nzz + k*nxx*nzz]));
 
-        float d2P_dy2 = (- 9.0f*(P[i + j*nzz + (k-4)*nxx*nzz] + P[i + j*nzz + (k+4)*nxx*nzz])
-                     +   128.0f*(P[i + j*nzz + (k-3)*nxx*nzz] + P[i + j*nzz + (k+3)*nxx*nzz])
-                     -  1008.0f*(P[i + j*nzz + (k-2)*nxx*nzz] + P[i + j*nzz + (k+2)*nxx*nzz])
-                     +  8064.0f*(P[i + j*nzz + (k-1)*nxx*nzz] + P[i + j*nzz + (k+1)*nxx*nzz])
-                     - 14350.0f*(P[i + j*nzz + k*nxx*nzz]))/(5040.0f*dh*dh);
+        float d2P_dy2 = idh2*(-FDM1*(P[i + j*nzz + (k-4)*nxx*nzz] + P[i + j*nzz + (k+4)*nxx*nzz])
+                              +FDM2*(P[i + j*nzz + (k-3)*nxx*nzz] + P[i + j*nzz + (k+3)*nxx*nzz])
+                              -FDM3*(P[i + j*nzz + (k-2)*nxx*nzz] + P[i + j*nzz + (k+2)*nxx*nzz])
+                              +FDM4*(P[i + j*nzz + (k-1)*nxx*nzz] + P[i + j*nzz + (k+1)*nxx*nzz])
+                              -FDM5*(P[i + j*nzz + k*nxx*nzz]));
 
-        float d2P_dz2 = (- 9.0f*(P[(i-4) + j*nzz + k*nxx*nzz] + P[(i+4) + j*nzz + k*nxx*nzz])
-                     +   128.0f*(P[(i-3) + j*nzz + k*nxx*nzz] + P[(i+3) + j*nzz + k*nxx*nzz])
-                     -  1008.0f*(P[(i-2) + j*nzz + k*nxx*nzz] + P[(i+2) + j*nzz + k*nxx*nzz])
-                     +  8064.0f*(P[(i-1) + j*nzz + k*nxx*nzz] + P[(i+1) + j*nzz + k*nxx*nzz])
-                     - 14350.0f*(P[i + j*nzz + k*nxx*nzz]))/(5040.0f*dh*dh);
+        float d2P_dz2 = idh2*(-FDM1*(P[(i-4) + j*nzz + k*nxx*nzz] + P[(i+4) + j*nzz + k*nxx*nzz])
+                              +FDM2*(P[(i-3) + j*nzz + k*nxx*nzz] + P[(i+3) + j*nzz + k*nxx*nzz])
+                              -FDM3*(P[(i-2) + j*nzz + k*nxx*nzz] + P[(i+2) + j*nzz + k*nxx*nzz])
+                              +FDM4*(P[(i-1) + j*nzz + k*nxx*nzz] + P[(i+1) + j*nzz + k*nxx*nzz])
+                              -FDM5*(P[i + j*nzz + k*nxx*nzz]));
 
         Pold[index] = dt*dt*Vp[index]*Vp[index]*(d2P_dx2 + d2P_dy2 + d2P_dz2) + 2.0f*P[index] - Pold[index];
         
@@ -526,13 +529,13 @@ void Modeling::set_coordinates()
     delete[] h_Z;
 }
 
-void Modeling::set_random_boundary(float * vp, float ratio, float varVp)
+void Modeling::set_random_boundary(float * Vp, float ratio, float varVp)
 {
     float x_max = (float)(nxx-1)*dh;
     float y_max = (float)(nyy-1)*dh;
     float z_max = (float)(nzz-1)*dh;
 
-    random_boundary_bg<<<nBlocks,NTHREADS>>>(vp, nxx, nyy, nzz, nb, varVp);
+    random_boundary_bg<<<nBlocks,NTHREADS>>>(Vp, nxx, nyy, nzz, nb, varVp);
 
     std::vector<Point> points = poissonDiskSampling(x_max, y_max, z_max, ratio);
     std::vector<Point> target;
@@ -558,11 +561,11 @@ void Modeling::set_random_boundary(float * vp, float ratio, float varVp)
 
         float factor = rand() % 2 == 0 ? -1.0f : 1.0f;
 
-        random_boundary_gp<<<nBlocks,NTHREADS>>>(vp, d_X, d_Y, d_Z, nxx, nyy, nzz, x_max, y_max, z_max, nb, dh, factor, A, xc, yc, zc, r, vmax, vmin, varVp);
+        random_boundary_gp<<<nBlocks,NTHREADS>>>(Vp, d_X, d_Y, d_Z, nxx, nyy, nzz, x_max, y_max, z_max, nb, dh, factor, A, xc, yc, zc, r, vmax, vmin, varVp);
     }
 }
 
-__global__ void random_boundary_gp(float * vp, float * X, float * Y, float * Z, int nxx, int nyy, int nzz, float x_max, float y_max, float z_max, int nb, float dh, float factor, float A, float xc, float yc, float zc, float r, float vmax, float vmin, float varVp)
+__global__ void random_boundary_gp(float * Vp, float * X, float * Y, float * Z, int nxx, int nyy, int nzz, float x_max, float y_max, float z_max, int nb, float dh, float factor, float A, float xc, float yc, float zc, float r, float vmax, float vmin, float varVp)
 {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -576,16 +579,16 @@ __global__ void random_boundary_gp(float * vp, float * X, float * Y, float * Z, 
           (Y[k] > fnb) && (Y[k] < y_max - fnb) &&
           (Z[i] > fnb) && (Z[i] < z_max - fnb)))
     {
-        vp[index] += factor*A*expf(-0.5f*(((X[j]-xc)/r)*((X[j]-xc)/r) +
+        Vp[index] += factor*A*expf(-0.5f*(((X[j]-xc)/r)*((X[j]-xc)/r) +
                                           ((Y[k]-yc)/r)*((Y[k]-yc)/r) +  
                                           ((Z[i]-zc)/r)*((Z[i]-zc)/r)));
         
-        vp[index] = vp[index] > vmax + varVp ? vmax + varVp : vp[index];
-        vp[index] = vp[index] < vmin - varVp ? vmin - varVp : vp[index];         
+        Vp[index] = Vp[index] > vmax + varVp ? vmax + varVp : Vp[index];
+        Vp[index] = Vp[index] < vmin - varVp ? vmin - varVp : Vp[index];         
     }   
 }
 
-__global__ void random_boundary_bg(float * vp, int nxx, int nyy, int nzz, int nb, float varVp)
+__global__ void random_boundary_bg(float * Vp, int nxx, int nyy, int nzz, int nb, float varVp)
 {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -603,7 +606,7 @@ __global__ void random_boundary_bg(float * vp, int nxx, int nyy, int nzz, int nb
 
         int index_ref = ii + jj*nzz + kk*nxx*nzz;
 
-        float val = vp[index_ref];
+        float val = Vp[index_ref];
 
         if (j < nb) {
             float fx = 1.0f - (float)(j) / (float)(nb);
@@ -632,7 +635,7 @@ __global__ void random_boundary_bg(float * vp, int nxx, int nyy, int nzz, int nb
             val = get_random_value(val, fz, varVp, index);
         }
 
-        vp[index] = val;        
+        Vp[index] = val;        
     }
 }
 
