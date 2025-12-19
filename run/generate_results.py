@@ -25,16 +25,16 @@ SPS = np.loadtxt(sps_path, dtype = np.float32, delimiter = ",")
 RPS = np.loadtxt(rps_path, dtype = np.float32, delimiter = ",")
 
 dh = np.array([dh, dh, dh])
-slices = np.array([0.5*nz, 0.1*ny, 0.1*nx], dtype = int)
+slices = np.array([0.05*nz, 0.2*ny, 0.2*nx], dtype = int)
 
 pyf.plot_model_3D(model, dh, slices, shots = sps_path, scale = 1.4, 
                   adjx = 0.7, dbar = 1.4, cmap = "jet",
                   cblab = "P wave velocity [km/s]")
 plt.show()
 
-image *= 1.0 / np.max(np.abs(image))
+image *= 1000.0 / np.max(np.abs(image))
 
 pyf.plot_model_3D(image, dh, slices, shots = sps_path, scale = 1.4, 
                   adjx = 0.7, dbar = 1.4, cmap = "Greys",
-                  cblab = "Normalized Amplitude")
+                  vmin = -500, vmax = 500, cblab = "Normalized Amplitude")
 plt.show()
