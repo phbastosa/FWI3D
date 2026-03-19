@@ -51,11 +51,11 @@ void Migration::show_information()
                                   ", x = " << (nx - 1)*dh <<
                                   ", y = " << (ny - 1)*dh <<") m\n\n";
 
-    std::cout << "Running shot " << srcId + 1 << " of " << geometry->nrel << " in total\n\n";
+    std::cout << "Running shot " << srcId + 1 << " of " << geometry->nsrc << " in total\n\n";
 
-    std::cout << "Current shot position: (z = " << geometry->zsrc[geometry->sInd[srcId]] << 
-                                       ", x = " << geometry->xsrc[geometry->sInd[srcId]] <<
-                                       ", y = " << geometry->ysrc[geometry->sInd[srcId]] << ") m\n\n";
+    std::cout << "Current shot position: (z = " << geometry->zsrc[srcId] << 
+                                       ", x = " << geometry->xsrc[srcId] <<
+                                       ", y = " << geometry->ysrc[srcId] << ") m\n\n";
 
     std::cout << line << "\n";
     std::cout << stage_info << std::endl;
@@ -90,7 +90,7 @@ void Migration::backward_propagation()
 
     for (int tId = 0; tId < nt + tlag; tId++)
     {
-        inject_seismogram<<<sBlocks, NTHREADS>>>(d_Pr, d_rIdx, d_rIdy, d_rIdz, d_seismogram, geometry->spread, tId, nt, nxx, nzz, idh3);
+        inject_seismogram<<<sBlocks, NTHREADS>>>(d_Pr, d_rIdx, d_rIdy, d_rIdz, d_seismogram, geometry->nrec, tId, nt, nxx, nzz, idh3);
 
         RTM<<<nBlocks, NTHREADS>>>(d_P, d_Pold, d_Pr, d_Prold, d_Vp, d_image, d_sumPs, nxx, nyy, nzz, nt, idh2, dt);
     
@@ -102,8 +102,8 @@ void Migration::backward_propagation()
 void Migration::set_seismic_source()
 {
     std::string data_file = input_folder + input_prefix + std::to_string(srcId+1) + ".bin";
-    import_binary_float(data_file, seismogram, nt*geometry->spread);
-    cudaMemcpy(d_seismogram, seismogram, nt*geometry->spread*sizeof(float), cudaMemcpyHostToDevice);
+    import_binary_float(data_file, seismogram, nt*geometry->nrec);
+    cudaMemcpy(d_seismogram, seismogram, nt*geometry->nrec*sizeof(float), cudaMemcpyHostToDevice);
 }
 
 void Migration::export_seismic()
@@ -125,10 +125,10 @@ void Migration::export_seismic()
         int j = (int) (index - k*nx*nz) / nz;   
         int i = (int) (index - j*nz - k*nx*nz);      
 
+        sumPs[index] = 0.0f;
+
         if((i > 0) && (i < nz-1)) 
-            sumPs[index] = -1.0f*(image[index-1] - 2.0f*image[index] + image[index+1]) / (dh*dh);
-        else 
-            sumPs[index] = 0.0f;
+            sumPs[index] = -1.0f*(image[index-1] - 2.0f*image[index] + image[index+1]) / (dh*dh);    
     }
 
     std::string output_file = output_folder + "RTM_section_" + std::to_string(nz) + "x" + std::to_string(nx) + "x" + std::to_string(ny) + ".bin";
@@ -158,41 +158,41 @@ __global__ void RTM(float * Ps, float * Psold, float * Pr, float * Prold, float 
     
     if((i > 3) && (i < nzz-4) && (j > 3) && (j < nxx-4) && (k > 3) && (k < nyy-4)) 
     {
-        float d2Ps_dx2 = idh2*(-FDM1*(Psold[i + (j-4)*nzz + k*nxx*nzz] + Psold[i + (j+4)*nzz + k*nxx*nzz])
-                               +FDM2*(Psold[i + (j-3)*nzz + k*nxx*nzz] + Psold[i + (j+3)*nzz + k*nxx*nzz])
-                               -FDM3*(Psold[i + (j-2)*nzz + k*nxx*nzz] + Psold[i + (j+2)*nzz + k*nxx*nzz])
-                               +FDM4*(Psold[i + (j-1)*nzz + k*nxx*nzz] + Psold[i + (j+1)*nzz + k*nxx*nzz])
-                               -FDM5*(Psold[i + j*nzz + k*nxx*nzz]));
+        float d2Ps_dx2 = (-FDM1*(Psold[i + (j-4)*nzz + k*nxx*nzz] + Psold[i + (j+4)*nzz + k*nxx*nzz])
+                          +FDM2*(Psold[i + (j-3)*nzz + k*nxx*nzz] + Psold[i + (j+3)*nzz + k*nxx*nzz])
+                          -FDM3*(Psold[i + (j-2)*nzz + k*nxx*nzz] + Psold[i + (j+2)*nzz + k*nxx*nzz])
+                          +FDM4*(Psold[i + (j-1)*nzz + k*nxx*nzz] + Psold[i + (j+1)*nzz + k*nxx*nzz])
+                          -FDM5*(Psold[i + j*nzz + k*nxx*nzz]))*idh2;
 
-        float d2Ps_dy2 = idh2*(-FDM1*(Psold[i + j*nzz + (k-4)*nxx*nzz] + Psold[i + j*nzz + (k+4)*nxx*nzz])
-                               +FDM2*(Psold[i + j*nzz + (k-3)*nxx*nzz] + Psold[i + j*nzz + (k+3)*nxx*nzz])
-                               -FDM3*(Psold[i + j*nzz + (k-2)*nxx*nzz] + Psold[i + j*nzz + (k+2)*nxx*nzz])
-                               +FDM4*(Psold[i + j*nzz + (k-1)*nxx*nzz] + Psold[i + j*nzz + (k+1)*nxx*nzz])
-                               -FDM5*(Psold[i + j*nzz + k*nxx*nzz]));
+        float d2Ps_dy2 = (-FDM1*(Psold[i + j*nzz + (k-4)*nxx*nzz] + Psold[i + j*nzz + (k+4)*nxx*nzz])
+                          +FDM2*(Psold[i + j*nzz + (k-3)*nxx*nzz] + Psold[i + j*nzz + (k+3)*nxx*nzz])
+                          -FDM3*(Psold[i + j*nzz + (k-2)*nxx*nzz] + Psold[i + j*nzz + (k+2)*nxx*nzz])
+                          +FDM4*(Psold[i + j*nzz + (k-1)*nxx*nzz] + Psold[i + j*nzz + (k+1)*nxx*nzz])
+                          -FDM5*(Psold[i + j*nzz + k*nxx*nzz]))*idh2;
 
-        float d2Ps_dz2 = idh2*(-FDM1*(Psold[(i-4) + j*nzz + k*nxx*nzz] + Psold[(i+4) + j*nzz + k*nxx*nzz])
-                               +FDM2*(Psold[(i-3) + j*nzz + k*nxx*nzz] + Psold[(i+3) + j*nzz + k*nxx*nzz])
-                               -FDM3*(Psold[(i-2) + j*nzz + k*nxx*nzz] + Psold[(i+2) + j*nzz + k*nxx*nzz])
-                               +FDM4*(Psold[(i-1) + j*nzz + k*nxx*nzz] + Psold[(i+1) + j*nzz + k*nxx*nzz])
-                               -FDM5*(Psold[i + j*nzz + k*nxx*nzz]));
+        float d2Ps_dz2 = (-FDM1*(Psold[(i-4) + j*nzz + k*nxx*nzz] + Psold[(i+4) + j*nzz + k*nxx*nzz])
+                          +FDM2*(Psold[(i-3) + j*nzz + k*nxx*nzz] + Psold[(i+3) + j*nzz + k*nxx*nzz])
+                          -FDM3*(Psold[(i-2) + j*nzz + k*nxx*nzz] + Psold[(i+2) + j*nzz + k*nxx*nzz])
+                          +FDM4*(Psold[(i-1) + j*nzz + k*nxx*nzz] + Psold[(i+1) + j*nzz + k*nxx*nzz])
+                          -FDM5*(Psold[i + j*nzz + k*nxx*nzz]))*idh2;
         
-        float d2Pr_dx2 = idh2*(-FDM1*(Pr[i + (j-4)*nzz + k*nxx*nzz] + Pr[i + (j+4)*nzz + k*nxx*nzz])
-                               +FDM2*(Pr[i + (j-3)*nzz + k*nxx*nzz] + Pr[i + (j+3)*nzz + k*nxx*nzz])
-                               -FDM3*(Pr[i + (j-2)*nzz + k*nxx*nzz] + Pr[i + (j+2)*nzz + k*nxx*nzz])
-                               +FDM4*(Pr[i + (j-1)*nzz + k*nxx*nzz] + Pr[i + (j+1)*nzz + k*nxx*nzz])
-                               -FDM5*(Pr[i + j*nzz + k*nxx*nzz]));
+        float d2Pr_dx2 = (-FDM1*(Pr[i + (j-4)*nzz + k*nxx*nzz] + Pr[i + (j+4)*nzz + k*nxx*nzz])
+                          +FDM2*(Pr[i + (j-3)*nzz + k*nxx*nzz] + Pr[i + (j+3)*nzz + k*nxx*nzz])
+                          -FDM3*(Pr[i + (j-2)*nzz + k*nxx*nzz] + Pr[i + (j+2)*nzz + k*nxx*nzz])
+                          +FDM4*(Pr[i + (j-1)*nzz + k*nxx*nzz] + Pr[i + (j+1)*nzz + k*nxx*nzz])
+                          -FDM5*(Pr[i + j*nzz + k*nxx*nzz]))*idh2;
 
-        float d2Pr_dy2 = idh2*(-FDM1*(Pr[i + j*nzz + (k-4)*nxx*nzz] + Pr[i + j*nzz + (k+4)*nxx*nzz])
-                               +FDM2*(Pr[i + j*nzz + (k-3)*nxx*nzz] + Pr[i + j*nzz + (k+3)*nxx*nzz])
-                               -FDM3*(Pr[i + j*nzz + (k-2)*nxx*nzz] + Pr[i + j*nzz + (k+2)*nxx*nzz])
-                               +FDM4*(Pr[i + j*nzz + (k-1)*nxx*nzz] + Pr[i + j*nzz + (k+1)*nxx*nzz])
-                               -FDM5*(Pr[i + j*nzz + k*nxx*nzz]));
+        float d2Pr_dy2 = (-FDM1*(Pr[i + j*nzz + (k-4)*nxx*nzz] + Pr[i + j*nzz + (k+4)*nxx*nzz])
+                          +FDM2*(Pr[i + j*nzz + (k-3)*nxx*nzz] + Pr[i + j*nzz + (k+3)*nxx*nzz])
+                          -FDM3*(Pr[i + j*nzz + (k-2)*nxx*nzz] + Pr[i + j*nzz + (k+2)*nxx*nzz])
+                          +FDM4*(Pr[i + j*nzz + (k-1)*nxx*nzz] + Pr[i + j*nzz + (k+1)*nxx*nzz])
+                          -FDM5*(Pr[i + j*nzz + k*nxx*nzz]))*idh2;
 
-        float d2Pr_dz2 = idh2*(-FDM1*(Pr[(i-4) + j*nzz + k*nxx*nzz] + Pr[(i+4) + j*nzz + k*nxx*nzz])
-                               +FDM2*(Pr[(i-3) + j*nzz + k*nxx*nzz] + Pr[(i+3) + j*nzz + k*nxx*nzz])
-                               -FDM3*(Pr[(i-2) + j*nzz + k*nxx*nzz] + Pr[(i+2) + j*nzz + k*nxx*nzz])
-                               +FDM4*(Pr[(i-1) + j*nzz + k*nxx*nzz] + Pr[(i+1) + j*nzz + k*nxx*nzz])
-                               -FDM5*(Pr[i + j*nzz + k*nxx*nzz]));
+        float d2Pr_dz2 = (-FDM1*(Pr[(i-4) + j*nzz + k*nxx*nzz] + Pr[(i+4) + j*nzz + k*nxx*nzz])
+                          +FDM2*(Pr[(i-3) + j*nzz + k*nxx*nzz] + Pr[(i+3) + j*nzz + k*nxx*nzz])
+                          -FDM3*(Pr[(i-2) + j*nzz + k*nxx*nzz] + Pr[(i+2) + j*nzz + k*nxx*nzz])
+                          +FDM4*(Pr[(i-1) + j*nzz + k*nxx*nzz] + Pr[(i+1) + j*nzz + k*nxx*nzz])
+                          -FDM5*(Pr[i + j*nzz + k*nxx*nzz]))*idh2;
         
         Ps[index] = dt*dt*Vp[index]*Vp[index]*(d2Ps_dx2 + d2Ps_dy2 + d2Ps_dz2) + 2.0f*Psold[index] - Ps[index];    
 

@@ -60,18 +60,18 @@ void Modeling::set_geometry()
     geometry->parameters = parameters;
     geometry->set_parameters();
     
-    cudaMalloc((void**)&(d_rIdx), geometry->spread*sizeof(int));
-    cudaMalloc((void**)&(d_rIdy), geometry->spread*sizeof(int));
-    cudaMalloc((void**)&(d_rIdz), geometry->spread*sizeof(int));
+    cudaMalloc((void**)&(d_rIdx), geometry->nrec*sizeof(int));
+    cudaMalloc((void**)&(d_rIdy), geometry->nrec*sizeof(int));
+    cudaMalloc((void**)&(d_rIdz), geometry->nrec*sizeof(int));
 }
 
 void Modeling::set_seismograms()
 {
-    sBlocks = (int)((geometry->spread + NTHREADS - 1) / NTHREADS); 
+    sBlocks = (int)((geometry->nrec + NTHREADS - 1) / NTHREADS); 
     
-    seismogram = new float[nt*geometry->spread]();
+    seismogram = new float[nt*geometry->nrec]();
 
-    cudaMalloc((void**)&(d_seismogram), nt*geometry->spread*sizeof(float));
+    cudaMalloc((void**)&(d_seismogram), nt*geometry->nrec*sizeof(float));
 }
 
 void Modeling::set_abc_dampers()
@@ -157,7 +157,8 @@ void Modeling::set_properties()
 
     vmax = 0.0f;
     vmin = 1e9f;
-
+    
+    # pragma omp parallel for
     for (int index = 0; index < nPoints; index++)
     {
         vmax = vmax < vp[index] ? vp[index] : vmax; 
@@ -247,30 +248,30 @@ void Modeling::show_information()
     
     std::cout << "Model dimensions: (z = " << (nz - 1)*dh << ", x = " << (nx - 1)*dh << ", y = " << (ny - 1)*dh << ") m\n\n";
 
-    std::cout << "Running shot " << srcId + 1 << " of " << geometry->nrel << " in total\n\n";
+    std::cout << "Running shot " << srcId + 1 << " of " << geometry->nsrc << " in total\n\n";
 
-    std::cout << "Current shot position: (z = " << geometry->zsrc[geometry->sInd[srcId]] << 
-                                       ", x = " << geometry->xsrc[geometry->sInd[srcId]] << 
-                                       ", y = " << geometry->ysrc[geometry->sInd[srcId]] << ") m\n";
+    std::cout << "Current shot position: (z = " << geometry->zsrc[srcId] << 
+                                       ", x = " << geometry->xsrc[srcId] << 
+                                       ", y = " << geometry->ysrc[srcId] << ") m\n";
 }
 
 void Modeling::initialization()
 {
-    float sx = geometry->xsrc[geometry->sInd[srcId]];
-    float sy = geometry->ysrc[geometry->sInd[srcId]];
-    float sz = geometry->zsrc[geometry->sInd[srcId]];
+    float sx = geometry->xsrc[srcId];
+    float sy = geometry->ysrc[srcId];
+    float sz = geometry->zsrc[srcId];
 
     sIdx = (int)((sx + 0.5f*dh) / dh) + nb;
     sIdy = (int)((sy + 0.5f*dh) / dh) + nb;
     sIdz = (int)((sz + 0.5f*dh) / dh) + nb;
 
-    int * h_rIdx = new int[geometry->spread]();
-    int * h_rIdy = new int[geometry->spread]();
-    int * h_rIdz = new int[geometry->spread]();
+    int * h_rIdx = new int[geometry->nrec]();
+    int * h_rIdy = new int[geometry->nrec]();
+    int * h_rIdz = new int[geometry->nrec]();
 
     int spreadId = 0;
 
-    for (int recId = geometry->iRec[srcId]; recId < geometry->fRec[srcId]; recId++)
+    for (int recId = 0; recId < geometry->nrec; recId++)
     {
         float rx = geometry->xrec[recId];
         float ry = geometry->yrec[recId];
@@ -283,9 +284,9 @@ void Modeling::initialization()
         ++spreadId;
     }
 
-    cudaMemcpy(d_rIdx, h_rIdx, geometry->spread*sizeof(int), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_rIdy, h_rIdy, geometry->spread*sizeof(int), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_rIdz, h_rIdz, geometry->spread*sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_rIdx, h_rIdx, geometry->nrec*sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_rIdy, h_rIdy, geometry->nrec*sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_rIdz, h_rIdz, geometry->nrec*sizeof(int), cudaMemcpyHostToDevice);
 
     delete[] h_rIdx;
     delete[] h_rIdy;
@@ -294,9 +295,9 @@ void Modeling::initialization()
 
 void Modeling::get_seismogram()
 {
-    cudaMemcpy(seismogram, d_seismogram, nt*geometry->spread*sizeof(float), cudaMemcpyDeviceToHost);
-    std::string data_file = data_folder + "seismogram_nt" + std::to_string(nt) + "_nr" + std::to_string(geometry->spread) + "_" + std::to_string(int(1e6f*dt)) + "us_shot_" + std::to_string(srcId+1) + ".bin";
-    export_binary_float(data_file, seismogram, nt*geometry->spread);    
+    cudaMemcpy(seismogram, d_seismogram, nt*geometry->nrec*sizeof(float), cudaMemcpyDeviceToHost);
+    std::string data_file = data_folder + "seismogram_nt" + std::to_string(nt) + "_nr" + std::to_string(geometry->nrec) + "_" + std::to_string(int(1e6f*dt)) + "us_shot_" + std::to_string(srcId+1) + ".bin";
+    export_binary_float(data_file, seismogram, nt*geometry->nrec);    
 }
 
 void Modeling::forward_solver()
@@ -311,7 +312,7 @@ void Modeling::forward_solver()
     {
         compute_pressure<<<nBlocks, NTHREADS>>>(d_Vp, d_P, d_Pold, d_wavelet, d_b1d, d_b2d, d_b3d, sIdx, sIdy, sIdz, tId, nt, nb, nxx, nyy, nzz, idh2, idh3, dt, ABC);
         
-        compute_seismogram<<<sBlocks, NTHREADS>>>(d_P, d_rIdx, d_rIdy, d_rIdz, d_seismogram, geometry->spread, tId, tlag, nt, nxx, nzz);     
+        compute_seismogram<<<sBlocks, NTHREADS>>>(d_P, d_rIdx, d_rIdy, d_rIdz, d_seismogram, geometry->nrec, tId, tlag, nt, nxx, nzz);     
 
         std::swap(d_P, d_Pold);
     }
@@ -330,23 +331,23 @@ __global__ void compute_pressure(float * Vp, float * P, float * Pold, float * wa
 
     if((i > 3) && (i < nzz-4) && (j > 3) && (j < nxx-4) && (k > 3) && (k < nyy-4)) 
     {
-        float d2P_dx2 = idh2*(-FDM1*(P[i + (j-4)*nzz + k*nxx*nzz] + P[i + (j+4)*nzz + k*nxx*nzz])
-                              +FDM2*(P[i + (j-3)*nzz + k*nxx*nzz] + P[i + (j+3)*nzz + k*nxx*nzz])
-                              -FDM3*(P[i + (j-2)*nzz + k*nxx*nzz] + P[i + (j+2)*nzz + k*nxx*nzz])
-                              +FDM4*(P[i + (j-1)*nzz + k*nxx*nzz] + P[i + (j+1)*nzz + k*nxx*nzz])
-                              -FDM5*(P[i + j*nzz + k*nxx*nzz]));
+        float d2P_dx2 = (-FDM1*(P[i + (j-4)*nzz + k*nxx*nzz] + P[i + (j+4)*nzz + k*nxx*nzz])
+                         +FDM2*(P[i + (j-3)*nzz + k*nxx*nzz] + P[i + (j+3)*nzz + k*nxx*nzz])
+                         -FDM3*(P[i + (j-2)*nzz + k*nxx*nzz] + P[i + (j+2)*nzz + k*nxx*nzz])
+                         +FDM4*(P[i + (j-1)*nzz + k*nxx*nzz] + P[i + (j+1)*nzz + k*nxx*nzz])
+                         -FDM5*(P[i + j*nzz + k*nxx*nzz]))*idh2;
 
-        float d2P_dy2 = idh2*(-FDM1*(P[i + j*nzz + (k-4)*nxx*nzz] + P[i + j*nzz + (k+4)*nxx*nzz])
-                              +FDM2*(P[i + j*nzz + (k-3)*nxx*nzz] + P[i + j*nzz + (k+3)*nxx*nzz])
-                              -FDM3*(P[i + j*nzz + (k-2)*nxx*nzz] + P[i + j*nzz + (k+2)*nxx*nzz])
-                              +FDM4*(P[i + j*nzz + (k-1)*nxx*nzz] + P[i + j*nzz + (k+1)*nxx*nzz])
-                              -FDM5*(P[i + j*nzz + k*nxx*nzz]));
+        float d2P_dy2 = (-FDM1*(P[i + j*nzz + (k-4)*nxx*nzz] + P[i + j*nzz + (k+4)*nxx*nzz])
+                         +FDM2*(P[i + j*nzz + (k-3)*nxx*nzz] + P[i + j*nzz + (k+3)*nxx*nzz])
+                         -FDM3*(P[i + j*nzz + (k-2)*nxx*nzz] + P[i + j*nzz + (k+2)*nxx*nzz])
+                         +FDM4*(P[i + j*nzz + (k-1)*nxx*nzz] + P[i + j*nzz + (k+1)*nxx*nzz])
+                         -FDM5*(P[i + j*nzz + k*nxx*nzz]))*idh2;
 
-        float d2P_dz2 = idh2*(-FDM1*(P[(i-4) + j*nzz + k*nxx*nzz] + P[(i+4) + j*nzz + k*nxx*nzz])
-                              +FDM2*(P[(i-3) + j*nzz + k*nxx*nzz] + P[(i+3) + j*nzz + k*nxx*nzz])
-                              -FDM3*(P[(i-2) + j*nzz + k*nxx*nzz] + P[(i+2) + j*nzz + k*nxx*nzz])
-                              +FDM4*(P[(i-1) + j*nzz + k*nxx*nzz] + P[(i+1) + j*nzz + k*nxx*nzz])
-                              -FDM5*(P[i + j*nzz + k*nxx*nzz]));
+        float d2P_dz2 = (-FDM1*(P[(i-4) + j*nzz + k*nxx*nzz] + P[(i+4) + j*nzz + k*nxx*nzz])
+                         +FDM2*(P[(i-3) + j*nzz + k*nxx*nzz] + P[(i+3) + j*nzz + k*nxx*nzz])
+                         -FDM3*(P[(i-2) + j*nzz + k*nxx*nzz] + P[(i+2) + j*nzz + k*nxx*nzz])
+                         +FDM4*(P[(i-1) + j*nzz + k*nxx*nzz] + P[(i+1) + j*nzz + k*nxx*nzz])
+                         -FDM5*(P[i + j*nzz + k*nxx*nzz]))*idh2;
 
         Pold[index] = dt*dt*Vp[index]*Vp[index]*(d2P_dx2 + d2P_dy2 + d2P_dz2) + 2.0f*P[index] - Pold[index];
         

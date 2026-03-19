@@ -4,11 +4,12 @@ import numpy as np
 import functions as pyf
 import matplotlib.pyplot as plt
 
+from scipy.ndimage import gaussian_filter
+
 parameters = str(sys.argv[1])
 
 SPS_path = pyf.catch_parameter(parameters,"SPS") 
 RPS_path = pyf.catch_parameter(parameters,"RPS") 
-XPS_path = pyf.catch_parameter(parameters,"XPS")
 
 model_file = pyf.catch_parameter(parameters,"model_file")
 
@@ -21,21 +22,17 @@ dh = float(pyf.catch_parameter(parameters, "model_spacing"))
 nt = int(pyf.catch_parameter(parameters, "time_samples"))
 dt = float(pyf.catch_parameter(parameters, "time_spacing"))
 
-vp = np.array([1500, 1800, 2000])
-z = np.array([750, 1000])
-
 nsx = 6
 nsy = 6
 
-nrx = 201
-nry = 201
+nrx = 51
+nry = 51
 
 ns = nsx*nsy
 nr = nrx*nry
 
 SPS = np.zeros((ns, 3))
 RPS = np.zeros((nr, 3))
-XPS = np.zeros((ns, 3))
 
 sx, sy = np.meshgrid(np.linspace(1000, 4000, nsx), 
                      np.linspace(1000, 4000, nsy))
@@ -51,29 +48,25 @@ RPS[:,0] = np.reshape(rx, [nr], order = "F")
 RPS[:,1] = np.reshape(ry, [nr], order = "F")
 RPS[:,2] = np.zeros(nr) 
 
-XPS[:, 0] = np.arange(ns)
-XPS[:, 1] = np.zeros(ns) 
-XPS[:, 2] = np.zeros(ns) + nr 
-
 np.savetxt(SPS_path, SPS, fmt = "%.2f", delimiter = ",")
 np.savetxt(RPS_path, RPS, fmt = "%.2f", delimiter = ",")
-np.savetxt(XPS_path, XPS, fmt = "%.0f", delimiter = ",")
 
-vp = np.array([1500, 1800, 2000])
-z = np.array([750, 1000])
+m_true = np.fromfile(model_file, dtype = np.float32, count = nx*ny*nz).reshape([nz,nx,ny], order = "F")
 
-Vp = np.zeros((nz,nx,ny))
+vmin = np.min(m_true)
+vmax = np.max(m_true)
 
-for i in range(len(vp)):
-    layer = int(np.sum(z[:i])/dh)
-    Vp[layer:] = vp[i]
+m_init = 1.0 / gaussian_filter(1.0 / m_true, 5.0)
 
-Vp.flatten("F").astype(np.float32, order = "F").tofile(model_file)
+m_init.flatten("F").astype(np.float32, order = "F").tofile(model_file.replace("true", "init"))
 
 dh = np.array([dh, dh, dh])
-slices = np.array([0.05*nz, 0.2*ny, 0.2*nx], dtype = int)
+slices = np.array([0.75*nz, 0.56*ny, 0.56*nx], dtype = int)
 
-pyf.plot_model_3D(Vp, dh, slices, shots = SPS_path, scale = 1.4, 
-                  nodes = RPS_path, adjx = 0.7, dbar = 1.4, cmap = "jet",
-                  cblab = "P wave velocity [km/s]")
+pyf.plot_model_3D(m_true, dh, slices, shots = SPS_path, nodes = RPS_path, scale = 1.4, adjx = 0.7, 
+                  dbar = 1.4, cmap = "jet", cblab = "P wave velocity [km/s]")
+plt.show()
+
+pyf.plot_model_3D(m_init, dh, slices, shots = SPS_path, nodes = RPS_path, scale = 1.4, adjx = 0.7, 
+                  dbar = 1.4, cmap = "jet", cblab = "P wave velocity [km/s]")
 plt.show()

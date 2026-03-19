@@ -10,7 +10,7 @@ int main(int argc, char **argv)
 
     auto ti = std::chrono::system_clock::now();
 
-    for (int srcId = 0; srcId < migration->geometry->nrel; srcId++)
+    for (int srcId = 0; srcId < migration->geometry->nsrc; srcId++)
     {
         migration->srcId = srcId;
 

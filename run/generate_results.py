@@ -25,7 +25,7 @@ SPS = np.loadtxt(sps_path, dtype = np.float32, delimiter = ",")
 RPS = np.loadtxt(rps_path, dtype = np.float32, delimiter = ",")
 
 dh = np.array([dh, dh, dh])
-slices = np.array([0.05*nz, 0.2*ny, 0.2*nx], dtype = int)
+slices = np.array([0.75*nz, 0.56*ny, 0.56*nx], dtype = int)
 
 pyf.plot_model_3D(model, dh, slices, shots = sps_path, scale = 1.4, 
                   adjx = 0.7, dbar = 1.4, cmap = "jet",

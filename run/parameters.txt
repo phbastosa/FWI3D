@@ -6,29 +6,29 @@ x_samples = 201
 y_samples = 201      
 z_samples = 81
 
-model_spacing = 25.0
+model_spacing = 25.0                # [m]
 
-model_file = ../inputs/models/test_vp.bin 
+model_file = ../inputs/models/overthrust_true_81x201x201_25m.bin 
 
 #------------------------------------------------------------
 # Geometry --------------------------------------------------
 #------------------------------------------------------------
 
-SPS = ../inputs/geometry/test_SPS.txt 
-RPS = ../inputs/geometry/test_RPS.txt 
-XPS = ../inputs/geometry/test_XPS.txt 
+SPS = ../inputs/geometry/overthrust_SPS.txt 
+RPS = ../inputs/geometry/overthrust_RPS.txt 
+XPS = ../inputs/geometry/overthrust_XPS.txt 
 
 #------------------------------------------------------------
 # Modeling parameters ---------------------------------------
 #------------------------------------------------------------
 
 time_samples = 2001
-time_spacing = 2e-3
+time_spacing = 1e-3                 # [s]
 
-max_frequency = 15.0
+max_frequency = 50.0                # [Hz]
 
-abc_length = 1250
-abc_factor = 0.0045 
+abc_length = 1250                   # [m]
+abc_factor = 0.0035 
 
 mod_output_folder = ../outputs/data/
 
@@ -36,9 +36,9 @@ mod_output_folder = ../outputs/data/
 # Inversion parameters --------------------------------------
 #------------------------------------------------------------
 
-inv_rbc_ratio = 200
-inv_rbc_varVp = 1000
-inv_rbc_length = 800
+inv_rbc_ratio = 100                 # [m]
+inv_rbc_varVp = 1000                # [m/s]
+inv_rbc_length = 500                # [m] 
 
 inv_input_folder = ../inputs/data/
 inv_output_folder = ../outputs/models/
@@ -48,10 +48,10 @@ inv_residuo_folder = ../outputs/residuo/
 # Migration parameters --------------------------------------
 #------------------------------------------------------------
 
-mig_rbc_ratio = 200
-mig_rbc_varVp = 1000
-mig_rbc_length = 800
+mig_rbc_ratio = 100                 # [m]
+mig_rbc_varVp = 1000                # [m/s]
+mig_rbc_length = 500                # [m] 
 
 mig_input_folder = ../inputs/data/
-mig_input_prefix = test_data_shot_
+mig_input_prefix = mig_data_shot_
 mig_output_folder = ../outputs/seismic/
