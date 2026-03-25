@@ -25,7 +25,8 @@ private:
     std::string input_prefix;
     std::string output_folder;
     
-    void show_information();
+    void show_mig_info();
+    
     void set_seismic_source();
 
 public:
@@ -36,8 +37,12 @@ public:
     void export_seismic();
 };
 
-__global__ void inject_seismogram(float * Pr, int * rIdx, int * rIdy, int * rIdz, float * seismogram, int spread, int tId, int nt, int nxx, int nzz, float dh);
+__global__ void inject_seismogram(float * __restrict__ Pr, const int * __restrict__ rIdx, const int * __restrict__ rIdy, 
+                                  const int * __restrict__ rIdz, const float * __restrict__ seismogram, int spread, int tId, 
+                                  int nt, int nxx, int nzz, float idh3);
 
-__global__ void RTM(float * Ps, float * Psold, float * Pr, float * Prold, float * Vp, float * image, float * sumPs, int nxx, int nyy, int nzz, int nt, float dh, float dt);
+__global__ void cross_correlation(float * __restrict__ Ps, const float * __restrict__ Psold, const float * __restrict__ Pr, 
+                                  float * __restrict__ Prold, const float * __restrict__ Vp, float * __restrict__ image, 
+                                  float * __restrict__ sumPs, int nxx, int nyy, int nzz, int nt, float idh2, float dt);
 
 # endif

@@ -23,8 +23,8 @@ protected:
 
     float abc_length;
     float abc_factor;
-    float vmax, vmin;
-    float dh, dt, fmax;
+    float vmax, vmin, idh2;
+    float dh, dt, fmax, idh3;
 
     std::string title;
     
@@ -89,9 +89,20 @@ public:
     void show_information();    
 };
 
-__global__ void compute_pressure(float * Vp, float * P, float * Pold, float * wavelet, float * b1d, float * b2d, float * b3d, int sIdx, int sIdy, int sIdz, int tId, int nt, int nb, int nxx, int nyy, int nzz, float idh2, float idh3, float dt, bool ABC);
-__global__ void compute_seismogram(float * P, int * rIdx, int * rIdy, int * rIdz, float * seismogram, int spread, int tId, int tlag, int nt, int nxx, int nzz);
-__device__ float get_boundary_damper(float * b1d, float * b2d, float * b3d, int i, int j, int k, int nxx, int nyy, int nzz, int nb);
+__global__ void compute_pressure(const float * __restrict__ Vp, float * __restrict__ P, float * __restrict__ Pold, 
+                                 const float * __restrict__ wavelet, const float * __restrict__ b1d, 
+                                 const float * __restrict__ b2d, const float * __restrict__ b3d, 
+                                 int sIdx, int sIdy, int sIdz, int tId, int nt, int nb, int nxx, 
+                                 int nyy, int nzz, float idh2, float idh3, float dt, bool ABC);
+
+__global__ void compute_seismogram(const float * __restrict__ P, const int * __restrict__ rIdx, 
+                                   const int * __restrict__ rIdy, const int * __restrict__ rIdz, 
+                                   float * __restrict__ seismogram, int spread, int tId, int tlag, 
+                                   int nt, int nxx, int nzz);
+
+__device__ float get_boundary_damper(const float * __restrict__ b1d, const float * __restrict__ b2d, 
+                                     const float * __restrict__ b3d, int i, int j, int k, int nxx, 
+                                     int nyy, int nzz, int nb);
 
 __device__ float get_random_value(float velocity, float function, float parameter, int index);
 __global__ void random_boundary_bg(float * Vp, int nxx, int nyy, int nzz, int nb, float varVp);

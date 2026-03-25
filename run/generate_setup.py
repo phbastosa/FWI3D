@@ -2,7 +2,6 @@ import sys; sys.path.append("../src/")
 
 import numpy as np
 import functions as pyf
-import matplotlib.pyplot as plt
 
 from scipy.ndimage import gaussian_filter
 
@@ -56,17 +55,14 @@ m_true = np.fromfile(model_file, dtype = np.float32, count = nx*ny*nz).reshape([
 vmin = np.min(m_true)
 vmax = np.max(m_true)
 
-m_init = 1.0 / gaussian_filter(1.0 / m_true, 5.0)
+m_init = m_true.copy()
+
+zmask = float(pyf.catch_parameter(parameters, "depth_mask"))
+
+zId = int(zmask/dh)
+
+m_init = 1.0 / gaussian_filter(1.0 / m_true, 3.0)
+
+m_init[:zId] = m_true[:zId]
 
 m_init.flatten("F").astype(np.float32, order = "F").tofile(model_file.replace("true", "init"))
-
-dh = np.array([dh, dh, dh])
-slices = np.array([0.75*nz, 0.56*ny, 0.56*nx], dtype = int)
-
-pyf.plot_model_3D(m_true, dh, slices, shots = SPS_path, nodes = RPS_path, scale = 1.4, adjx = 0.7, 
-                  dbar = 1.4, cmap = "jet", cblab = "P wave velocity [km/s]")
-plt.show()
-
-pyf.plot_model_3D(m_init, dh, slices, shots = SPS_path, nodes = RPS_path, scale = 1.4, adjx = 0.7, 
-                  dbar = 1.4, cmap = "jet", cblab = "P wave velocity [km/s]")
-plt.show()

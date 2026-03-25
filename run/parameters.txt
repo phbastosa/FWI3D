@@ -16,7 +16,6 @@ model_file = ../inputs/models/overthrust_true_81x201x201_25m.bin
 
 SPS = ../inputs/geometry/overthrust_SPS.txt 
 RPS = ../inputs/geometry/overthrust_RPS.txt 
-XPS = ../inputs/geometry/overthrust_XPS.txt 
 
 #------------------------------------------------------------
 # Modeling parameters ---------------------------------------
@@ -28,19 +27,25 @@ time_spacing = 1e-3                 # [s]
 max_frequency = 50.0                # [Hz]
 
 abc_length = 1250                   # [m]
-abc_factor = 0.0035 
+abc_factor = 0.004 
 
-mod_output_folder = ../outputs/data/
+mod_output_folder = ../inputs/data/
 
 #------------------------------------------------------------
 # Inversion parameters --------------------------------------
 #------------------------------------------------------------
+
+max_iteration = 5
+
+depth_mask = 400                    # [m] 
 
 inv_rbc_ratio = 100                 # [m]
 inv_rbc_varVp = 1000                # [m/s]
 inv_rbc_length = 500                # [m] 
 
 inv_input_folder = ../inputs/data/
+inv_input_prefix = seismogram_nt2001_nr2601_1000us_shot_ 
+
 inv_output_folder = ../outputs/models/
 inv_residuo_folder = ../outputs/residuo/
 
@@ -52,6 +57,6 @@ mig_rbc_ratio = 100                 # [m]
 mig_rbc_varVp = 1000                # [m/s]
 mig_rbc_length = 500                # [m] 
 
-mig_input_folder = ../inputs/data/
-mig_input_prefix = mig_data_shot_
+mig_input_folder = ../inputs/data/input_RTM_
+mig_input_prefix = seismogram_nt2001_nr2601_1000us_shot_
 mig_output_folder = ../outputs/seismic/

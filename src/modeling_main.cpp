@@ -10,9 +10,9 @@ int main(int argc, char **argv)
 
     auto ti = std::chrono::system_clock::now();
 
-    for (int shot = 0; shot < modeling->geometry->nsrc; shot++)
+    for (int srcId = 0; srcId < modeling->geometry->nsrc; srcId++)
     {
-        modeling->srcId = shot;
+        modeling->srcId = srcId;
 
         modeling->show_information();
 

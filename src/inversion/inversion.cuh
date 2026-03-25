@@ -7,67 +7,74 @@ class Inversion : public Modeling
 {
 private:
 
+    float step;
+    float zmask;
+    float sum_res;
+
     int iteration;
     int max_iteration;
-
-    float alpha;
-    float beta1;
-    float beta2;
 
     float rbc_ratio;
     float rbc_varVp;
     float rbc_length; 
 
-    int abc_nxx, abc_nzz, abc_nb, abc_matsize;
-    int rbc_nxx, rbc_nzz, rbc_nb, rbc_matsize;
+    int abc_nxx, abc_nyy, abc_nzz, abc_nb, abc_volsize;
+    int rbc_nxx, rbc_nyy, rbc_nzz, rbc_nb, rbc_volsize;
 
-    float * vp = nullptr;
-    float * A1 = nullptr;
-    float * A2 = nullptr;
+    float * model = nullptr;
 
-    float * sumPs = nullptr;
-    float * partial = nullptr;    
+    float * partial1 = nullptr;    
+    float * partial2 = nullptr;    
     float * gradient = nullptr;
-
-    float * h_rbc_Vp = nullptr;
-    float * d_rbc_Vp = nullptr;
-
     float * obs_data = nullptr;
 
-    float * d_Ps = nullptr;    
-    float * d_Pr = nullptr;
-    float * d_Psold = nullptr;
-    float * d_Prold = nullptr;
-    float * d_sumPs = nullptr;
-    float * d_gradient = nullptr;
+    float * d_Vp_rbc = nullptr;
+
+    float * d_Ps_rbc = nullptr;
+    float * d_Pr_rbc = nullptr;
+
+    float * d_Ps_old_rbc = nullptr;
+    float * d_Pr_old_rbc = nullptr;
+
+    float * d_sumPs_rbc = nullptr;
+    float * d_gradient_rbc = nullptr;
 
     std::string stage_info;
-    
-    std::string model_file;
     std::string input_folder;
+    std::string input_prefix;
     std::string output_folder; 
-    std::string residuo_folder; 
+    std::string residuo_folder;  
     
     std::vector<float> residuo;
     
-    void rbc_forward_solver();
-    void set_seismic_source();
+    void set_ABC_dimension();
+    void get_ABC_dimension();
+    
+    void set_RBC_dimension();
+    void get_RBC_dimension();
+
+    void set_initial_model();
+
+    void update_RBC();
+    void set_obs_data();
+    void get_cal_data();
+    void show_inv_info();
+
+    void set_adjoint_source();
     void forward_propagation();
     void backward_propagation();
 
-public:
+    void linesearch(float alpha);
 
-    int freqId;
-    int nFreqs;
+public:
 
     bool converged;
 
     void set_parameters();
-    void set_observed_data();
-    void show_information();
-    void check_convergence();
-    void set_calculated_data();
+
     void compute_gradient();
+    void check_convergence();
+
     void optimization();
     void update_model();
 
@@ -75,6 +82,11 @@ public:
     void export_convergence();
 };
 
-__global__ void FWI(float * Ps, float * Psold, float * Pr, float * Prold, float * Vp, float * seismogram, float * gradient, float * sumPs, int * rIdx, int * rIdz, int spread, int tId, int tlag, int nxx, int nzz, int nt, float dh, float dt);
+__global__ void inject_residuo(float * __restrict__ Pr, const int * __restrict__ rIdx, const int * __restrict__ rIdy, 
+                               const int * __restrict__ rIdz, const float * __restrict__ seismogram, int nr, int tId, 
+                               int nt, int nxx, int nzz, float idh3);
 
+__global__ void build_gradient(float * __restrict__ Ps, const float * __restrict__ Psold, const float * __restrict__ Pr, 
+                               float * __restrict__ Prold, const float * __restrict__ Vp, float * __restrict__ gradient, 
+                               float * __restrict__ sumPs, int nxx, int nyy, int nzz, int nt, float dt, float idh2);
 # endif

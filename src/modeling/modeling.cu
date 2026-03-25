@@ -6,11 +6,12 @@ void Modeling::set_parameters()
 
     set_main_parameters();
 
+    set_abc_dampers();
+
     set_wavelet();
     set_geometry();    
-    set_seismograms();
-    set_abc_dampers();
     set_properties();
+    set_seismograms();
 }
 
 void Modeling::set_main_parameters()
@@ -27,6 +28,9 @@ void Modeling::set_main_parameters()
     fmax = std::stof(catch_parameter("max_frequency", parameters));
     
     data_folder = catch_parameter("mod_output_folder", parameters);
+
+    idh2 = 1.0f / (dh*dh);
+    idh3 = 1.0f / (dh*dh*dh);
 }
 
 void Modeling::set_wavelet()
@@ -67,6 +71,8 @@ void Modeling::set_geometry()
 
 void Modeling::set_seismograms()
 {
+    data_folder = catch_parameter("mod_output_folder", parameters);
+
     sBlocks = (int)((geometry->nrec + NTHREADS - 1) / NTHREADS); 
     
     seismogram = new float[nt*geometry->nrec]();
@@ -81,7 +87,7 @@ void Modeling::set_abc_dampers()
     abc_length = std::stof(catch_parameter("abc_length", parameters));
     abc_factor = std::stof(catch_parameter("abc_factor", parameters));
 
-    nb = (int)(abc_length / dh) + 4;
+    nb = (int)(abc_length / dh) + 1;
 
     float * b1d = new float[nb]();
     float * b2d = new float[nb*nb]();
@@ -252,7 +258,7 @@ void Modeling::show_information()
 
     std::cout << "Current shot position: (z = " << geometry->zsrc[srcId] << 
                                        ", x = " << geometry->xsrc[srcId] << 
-                                       ", y = " << geometry->ysrc[srcId] << ") m\n";
+                                       ", y = " << geometry->ysrc[srcId] << ") m\n\n";
 }
 
 void Modeling::initialization()
@@ -305,9 +311,6 @@ void Modeling::forward_solver()
     cudaMemset(d_P, 0.0f, volsize*sizeof(float));
     cudaMemset(d_Pold, 0.0f, volsize*sizeof(float));
 
-    float idh2 = 1.0f / (dh*dh);    
-    float idh3 = 1.0f / (dh*dh*dh);
-
     for (int tId = 0; tId < tlag + nt; tId++)
     {
         compute_pressure<<<nBlocks, NTHREADS>>>(d_Vp, d_P, d_Pold, d_wavelet, d_b1d, d_b2d, d_b3d, sIdx, sIdy, sIdz, tId, nt, nb, nxx, nyy, nzz, idh2, idh3, dt, ABC);
@@ -318,38 +321,55 @@ void Modeling::forward_solver()
     }
 }
 
-__global__ void compute_pressure(float * Vp, float * P, float * Pold, float * wavelet, float * b1d, float * b2d, float * b3d, int sIdx, int sIdy, int sIdz, int tId, int nt, int nb, int nxx, int nyy, int nzz, float idh2, float idh3, float dt, bool ABC)
+__global__ void compute_pressure(const float * __restrict__ Vp, float * __restrict__ P, float * __restrict__ Pold, 
+                                 const float * __restrict__ wavelet, const float * __restrict__ b1d, 
+                                 const float * __restrict__ b2d, const float * __restrict__ b3d, 
+                                 int sIdx, int sIdy, int sIdz, int tId, int nt, int nb, int nxx, 
+                                 int nyy, int nzz, float idh2, float idh3, float dt, bool ABC)
 {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
 
-    int k = (int) (index / (nxx*nzz));         
-    int j = (int) (index - k*nxx*nzz) / nzz;   
-    int i = (int) (index - j*nzz - k*nxx*nzz); 
+    const int nxx_nzz = nxx*nzz;
+
+    int k = (int) (index / nxx_nzz);         
+    int j = (int) (index - k*nxx_nzz) / nzz;   
+    int i = (int) (index - j*nzz - k*nxx_nzz); 
+
+    const int base_j = j*nzz;
+    const int base_k = k*nxx_nzz;
+
+    const int jm4 = base_j - 4*nzz, jm3 = base_j - 3*nzz, jm2 = base_j - 2*nzz, jm1 = base_j - nzz;
+    const int jp4 = base_j + 4*nzz, jp3 = base_j + 3*nzz, jp2 = base_j + 2*nzz, jp1 = base_j + nzz;
+
+    const int km4 = base_k - 4*nxx_nzz, km3 = base_k - 3*nxx_nzz, km2 = base_k - 2*nxx_nzz, km1 = base_k - nxx_nzz;     
+    const int kp4 = base_k + 4*nxx_nzz, kp3 = base_k + 3*nxx_nzz, kp2 = base_k + 2*nxx_nzz, kp1 = base_k + nxx_nzz;     
 
     if ((index == 0) && (tId < nt))
         atomicAdd(&P[sIdz + sIdx*nzz + sIdy*nxx*nzz], idh3*wavelet[tId]);
 
     if((i > 3) && (i < nzz-4) && (j > 3) && (j < nxx-4) && (k > 3) && (k < nyy-4)) 
     {
-        float d2P_dx2 = (-FDM1*(P[i + (j-4)*nzz + k*nxx*nzz] + P[i + (j+4)*nzz + k*nxx*nzz])
-                         +FDM2*(P[i + (j-3)*nzz + k*nxx*nzz] + P[i + (j+3)*nzz + k*nxx*nzz])
-                         -FDM3*(P[i + (j-2)*nzz + k*nxx*nzz] + P[i + (j+2)*nzz + k*nxx*nzz])
-                         +FDM4*(P[i + (j-1)*nzz + k*nxx*nzz] + P[i + (j+1)*nzz + k*nxx*nzz])
-                         -FDM5*(P[i + j*nzz + k*nxx*nzz]))*idh2;
+        const float vp2 = Vp[index]*Vp[index];     
 
-        float d2P_dy2 = (-FDM1*(P[i + j*nzz + (k-4)*nxx*nzz] + P[i + j*nzz + (k+4)*nxx*nzz])
-                         +FDM2*(P[i + j*nzz + (k-3)*nxx*nzz] + P[i + j*nzz + (k+3)*nxx*nzz])
-                         -FDM3*(P[i + j*nzz + (k-2)*nxx*nzz] + P[i + j*nzz + (k+2)*nxx*nzz])
-                         +FDM4*(P[i + j*nzz + (k-1)*nxx*nzz] + P[i + j*nzz + (k+1)*nxx*nzz])
-                         -FDM5*(P[i + j*nzz + k*nxx*nzz]))*idh2;
+        float d2P_dx2 = (-FDM1*(P[i + jm4 + base_k] + P[i + jp4 + base_k])
+                         +FDM2*(P[i + jm3 + base_k] + P[i + jp3 + base_k])
+                         -FDM3*(P[i + jm2 + base_k] + P[i + jp2 + base_k])
+                         +FDM4*(P[i + jm1 + base_k] + P[i + jp1 + base_k])
+                         -FDM5*(P[i + base_j + base_k]))*idh2;
 
-        float d2P_dz2 = (-FDM1*(P[(i-4) + j*nzz + k*nxx*nzz] + P[(i+4) + j*nzz + k*nxx*nzz])
-                         +FDM2*(P[(i-3) + j*nzz + k*nxx*nzz] + P[(i+3) + j*nzz + k*nxx*nzz])
-                         -FDM3*(P[(i-2) + j*nzz + k*nxx*nzz] + P[(i+2) + j*nzz + k*nxx*nzz])
-                         +FDM4*(P[(i-1) + j*nzz + k*nxx*nzz] + P[(i+1) + j*nzz + k*nxx*nzz])
-                         -FDM5*(P[i + j*nzz + k*nxx*nzz]))*idh2;
+        float d2P_dy2 = (-FDM1*(P[i + base_j + km4] + P[i + base_j + kp4])
+                         +FDM2*(P[i + base_j + km3] + P[i + base_j + kp3])
+                         -FDM3*(P[i + base_j + km2] + P[i + base_j + kp2])
+                         +FDM4*(P[i + base_j + km1] + P[i + base_j + kp1])
+                         -FDM5*(P[i + base_j + base_k]))*idh2;
 
-        Pold[index] = dt*dt*Vp[index]*Vp[index]*(d2P_dx2 + d2P_dy2 + d2P_dz2) + 2.0f*P[index] - Pold[index];
+        float d2P_dz2 = (-FDM1*(P[(i-4) + base_j + base_k] + P[(i+4) + base_j + base_k])
+                         +FDM2*(P[(i-3) + base_j + base_k] + P[(i+3) + base_j + base_k])
+                         -FDM3*(P[(i-2) + base_j + base_k] + P[(i+2) + base_j + base_k])
+                         +FDM4*(P[(i-1) + base_j + base_k] + P[(i+1) + base_j + base_k])
+                         -FDM5*(P[i + base_j + base_k]))*idh2;
+
+        Pold[index] = dt*dt*vp2*(d2P_dx2 + d2P_dy2 + d2P_dz2) + 2.0f*P[index] - Pold[index];
         
         if (ABC)
         {
@@ -361,7 +381,10 @@ __global__ void compute_pressure(float * Vp, float * P, float * Pold, float * wa
     }
 }
 
-__global__ void compute_seismogram(float * P, int * rIdx, int * rIdy, int * rIdz, float * seismogram, int spread, int tId, int tlag, int nt, int nxx, int nzz)
+__global__ void compute_seismogram(const float * __restrict__ P, const int * __restrict__ rIdx, 
+                                   const int * __restrict__ rIdy, const int * __restrict__ rIdz, 
+                                   float * __restrict__ seismogram, int spread, int tId, int tlag, 
+                                   int nt, int nxx, int nzz)
 {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -369,7 +392,9 @@ __global__ void compute_seismogram(float * P, int * rIdx, int * rIdy, int * rIdz
         seismogram[(tId - tlag) + index*nt] = P[rIdz[index] + rIdx[index]*nzz + rIdy[index]*nxx*nzz];    
 }
 
-__device__ float get_boundary_damper(float * b1d, float * b2d, float * b3d, int i, int j, int k, int nxx, int nyy, int nzz, int nb)
+__device__ float get_boundary_damper(const float * __restrict__ b1d, const float * __restrict__ b2d, 
+                                     const float * __restrict__ b3d, int i, int j, int k, int nxx, 
+                                     int nyy, int nzz, int nb)
 {
     float damper;
 
@@ -557,10 +582,10 @@ void Modeling::set_random_boundary(float * Vp, float ratio, float varVp)
         float yc = target[p].y;
         float zc = target[p].z;
 
-        float r = std::uniform_real_distribution<float>(0.5f*ratio, ratio)(RBC_RNG);
+        float r = std::uniform_real_distribution<float>(0.2f*ratio, ratio)(RBC_RNG);
         float A = std::uniform_real_distribution<float>(0.5f*varVp, varVp)(RBC_RNG);
 
-        float factor = rand() % 2 == 0 ? -1.0f : 1.0f;
+        float factor = rand() % 3 == 0 ? -1.0f : 1.0f;
 
         random_boundary_gp<<<nBlocks,NTHREADS>>>(Vp, d_X, d_Y, d_Z, nxx, nyy, nzz, x_max, y_max, z_max, nb, dh, factor, A, xc, yc, zc, r, vmax, vmin, varVp);
     }
