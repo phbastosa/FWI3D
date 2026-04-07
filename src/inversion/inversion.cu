@@ -409,60 +409,60 @@ __global__ void build_gradient(float * __restrict__ Ps, const float * __restrict
     int j = (int) (index - k*nxx_nzz) / nzz;   
     int i = (int) (index - j*nzz - k*nxx_nzz); 
 
-    const int base_j = j*nzz;
-    const int base_k = k*nxx_nzz;
+    const int bsj = j*nzz;
+    const int bsk = k*nxx_nzz;
 
-    const int jm4 = base_j - 4*nzz, jm3 = base_j - 3*nzz, jm2 = base_j - 2*nzz, jm1 = base_j - nzz;
-    const int jp4 = base_j + 4*nzz, jp3 = base_j + 3*nzz, jp2 = base_j + 2*nzz, jp1 = base_j + nzz;
+    const int jm4 = bsj - 4*nzz, jm3 = bsj - 3*nzz, jm2 = bsj - 2*nzz, jm1 = bsj - nzz;
+    const int jp4 = bsj + 4*nzz, jp3 = bsj + 3*nzz, jp2 = bsj + 2*nzz, jp1 = bsj + nzz;
 
-    const int km4 = base_k - 4*nxx_nzz, km3 = base_k - 3*nxx_nzz, km2 = base_k - 2*nxx_nzz, km1 = base_k - nxx_nzz;     
-    const int kp4 = base_k + 4*nxx_nzz, kp3 = base_k + 3*nxx_nzz, kp2 = base_k + 2*nxx_nzz, kp1 = base_k + nxx_nzz;     
+    const int km4 = bsk - 4*nxx_nzz, km3 = bsk - 3*nxx_nzz, km2 = bsk - 2*nxx_nzz, km1 = bsk - nxx_nzz;     
+    const int kp4 = bsk + 4*nxx_nzz, kp3 = bsk + 3*nxx_nzz, kp2 = bsk + 2*nxx_nzz, kp1 = bsk + nxx_nzz;     
     
     if((i > 3) && (i < nzz-4) && (j > 3) && (j < nxx-4) && (k > 3) && (k < nyy-4)) 
     {
         const float vp2 = Vp[index]*Vp[index];
 
-        float d2Ps_dx2 = (-FDM1*(Psold[i + jm4 + base_k] + Psold[i + jp4 + base_k])
-                          +FDM2*(Psold[i + jm3 + base_k] + Psold[i + jp3 + base_k])
-                          -FDM3*(Psold[i + jm2 + base_k] + Psold[i + jp2 + base_k])
-                          +FDM4*(Psold[i + jm1 + base_k] + Psold[i + jp1 + base_k])
-                          -FDM5*(Psold[i + base_j + base_k]))*idh2;
+        float d2Ps_dx2 = (-FDM1*(Psold[i + jm4 + bsk] + Psold[i + jp4 + bsk])
+                          +FDM2*(Psold[i + jm3 + bsk] + Psold[i + jp3 + bsk])
+                          -FDM3*(Psold[i + jm2 + bsk] + Psold[i + jp2 + bsk])
+                          +FDM4*(Psold[i + jm1 + bsk] + Psold[i + jp1 + bsk])
+                          -FDM5*(Psold[i + bsj + bsk]))*idh2;
 
-        float d2Ps_dy2 = (-FDM1*(Psold[i + base_j + km4] + Psold[i + base_j + kp4])
-                          +FDM2*(Psold[i + base_j + km3] + Psold[i + base_j + kp3])
-                          -FDM3*(Psold[i + base_j + km2] + Psold[i + base_j + kp2])
-                          +FDM4*(Psold[i + base_j + km1] + Psold[i + base_j + kp1])
-                          -FDM5*(Psold[i + base_j + base_k]))*idh2;
+        float d2Ps_dy2 = (-FDM1*(Psold[i + bsj + km4] + Psold[i + bsj + kp4])
+                          +FDM2*(Psold[i + bsj + km3] + Psold[i + bsj + kp3])
+                          -FDM3*(Psold[i + bsj + km2] + Psold[i + bsj + kp2])
+                          +FDM4*(Psold[i + bsj + km1] + Psold[i + bsj + kp1])
+                          -FDM5*(Psold[i + bsj + bsk]))*idh2;
 
-        float d2Ps_dz2 = (-FDM1*(Psold[(i-4) + base_j + base_k] + Psold[(i+4) + base_j + base_k])
-                          +FDM2*(Psold[(i-3) + base_j + base_k] + Psold[(i+3) + base_j + base_k])
-                          -FDM3*(Psold[(i-2) + base_j + base_k] + Psold[(i+2) + base_j + base_k])
-                          +FDM4*(Psold[(i-1) + base_j + base_k] + Psold[(i+1) + base_j + base_k])
-                          -FDM5*(Psold[i + base_j + base_k]))*idh2;
+        float d2Ps_dz2 = (-FDM1*(Psold[(i-4) + bsj + bsk] + Psold[(i+4) + bsj + bsk])
+                          +FDM2*(Psold[(i-3) + bsj + bsk] + Psold[(i+3) + bsj + bsk])
+                          -FDM3*(Psold[(i-2) + bsj + bsk] + Psold[(i+2) + bsj + bsk])
+                          +FDM4*(Psold[(i-1) + bsj + bsk] + Psold[(i+1) + bsj + bsk])
+                          -FDM5*(Psold[i + bsj + bsk]))*idh2;
         
-        float d2Pr_dx2 = (-FDM1*(Pr[i + jm4 + base_k] + Pr[i + jp4 + base_k])
-                          +FDM2*(Pr[i + jm3 + base_k] + Pr[i + jp3 + base_k])
-                          -FDM3*(Pr[i + jm2 + base_k] + Pr[i + jp2 + base_k])
-                          +FDM4*(Pr[i + jm1 + base_k] + Pr[i + jp1 + base_k])
-                          -FDM5*(Pr[i + base_j + base_k]))*idh2;
+        float d2Pr_dx2 = (-FDM1*(Pr[i + jm4 + bsk] + Pr[i + jp4 + bsk])
+                          +FDM2*(Pr[i + jm3 + bsk] + Pr[i + jp3 + bsk])
+                          -FDM3*(Pr[i + jm2 + bsk] + Pr[i + jp2 + bsk])
+                          +FDM4*(Pr[i + jm1 + bsk] + Pr[i + jp1 + bsk])
+                          -FDM5*(Pr[i + bsj + bsk]))*idh2;
 
-        float d2Pr_dy2 = (-FDM1*(Pr[i + base_j + km4] + Pr[i + base_j + kp4])
-                          +FDM2*(Pr[i + base_j + km3] + Pr[i + base_j + kp3])
-                          -FDM3*(Pr[i + base_j + km2] + Pr[i + base_j + kp2])
-                          +FDM4*(Pr[i + base_j + km1] + Pr[i + base_j + kp1])
-                          -FDM5*(Pr[i + base_j + base_k]))*idh2;
+        float d2Pr_dy2 = (-FDM1*(Pr[i + bsj + km4] + Pr[i + bsj + kp4])
+                          +FDM2*(Pr[i + bsj + km3] + Pr[i + bsj + kp3])
+                          -FDM3*(Pr[i + bsj + km2] + Pr[i + bsj + kp2])
+                          +FDM4*(Pr[i + bsj + km1] + Pr[i + bsj + kp1])
+                          -FDM5*(Pr[i + bsj + bsk]))*idh2;
 
-        float d2Pr_dz2 = (-FDM1*(Pr[(i-4) + base_j + base_k] + Pr[(i+4) + base_j + base_k])
-                          +FDM2*(Pr[(i-3) + base_j + base_k] + Pr[(i+3) + base_j + base_k])
-                          -FDM3*(Pr[(i-2) + base_j + base_k] + Pr[(i+2) + base_j + base_k])
-                          +FDM4*(Pr[(i-1) + base_j + base_k] + Pr[(i+1) + base_j + base_k])
-                          -FDM5*(Pr[i + base_j + base_k]))*idh2;
+        float d2Pr_dz2 = (-FDM1*(Pr[(i-4) + bsj + bsk] + Pr[(i+4) + bsj + bsk])
+                          +FDM2*(Pr[(i-3) + bsj + bsk] + Pr[(i+3) + bsj + bsk])
+                          -FDM3*(Pr[(i-2) + bsj + bsk] + Pr[(i+2) + bsj + bsk])
+                          +FDM4*(Pr[(i-1) + bsj + bsk] + Pr[(i+1) + bsj + bsk])
+                          -FDM5*(Pr[i + bsj + bsk]))*idh2;
         
         Ps[index] = dt*dt*vp2*(d2Ps_dx2 + d2Ps_dy2 + d2Ps_dz2) + 2.0f*Psold[index] - Ps[index];    
 
         Prold[index] = dt*dt*vp2*(d2Pr_dx2 + d2Pr_dy2 + d2Pr_dz2) + 2.0f*Pr[index] - Prold[index];
     
         atomicAdd(&sumPs[index], Ps[index]*Ps[index]);
-        atomicAdd(&gradient[index], dt*Pr[index]*(d2Ps_dx2 + d2Ps_dz2)*Vp[index]*Vp[index]);
+        atomicAdd(&gradient[index], dt*Pr[index]*(d2Ps_dx2 + d2Ps_dz2)*vp2);
     }
 }

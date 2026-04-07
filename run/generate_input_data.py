@@ -43,4 +43,4 @@ for sId in range(ns):
         
         data[:tId[rId], rId] *= np.exp(-0.5*((timeId - tId[rId]) / gstd)**2)[:tId[rId]]
 
-    data.flatten("F").astype(np.float32, order = "F").tofile(f"../inputs/data/input_RTM_" + file)
+    data.flatten("F").astype(np.float32, order = "F").tofile(folder + "input_RTM_" + file)

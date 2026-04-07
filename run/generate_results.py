@@ -124,7 +124,7 @@ plt.show()
 
 
 
-image_file = f"../outputs/seismic/RTM_section_{nz}x{nx}x{ny}.bin"
+image_file = f"../outputs/seismic/RTM_section_50Hz_81x201x201_25m.bin"
 
 image = pyf.read_binary_volume(nz, nx, ny, image_file)
 
@@ -162,17 +162,14 @@ fig.tight_layout()
 plt.savefig("residuo_FWI.png", dpi = 200)
 plt.show()
 
+model_pred_file = "../outputs/models/final_model_FWI_50Hz_81x201x201_25m.bin"
 
-
-
-model_pred_file = "../outputs/models/model_FWI_50Hz_81x201x201.bin"
-
-model_init = pyf.read_binary_volume(nz, nx, ny, model_init_file)
+model_pred = pyf.read_binary_volume(nz, nx, ny, model_pred_file)
 
 slices = np.array([0.75*nz, 0.56*ny, 0.56*nx], dtype = int)
 
-pyf.plot_model_3D(model_init, dh, slices, shots = sps_path, scale = 1.4, 
+pyf.plot_model_3D(model_pred, dh, slices, shots = sps_path, scale = 1.4, 
                   adjx = 0.7, dbar = 1.4, cmap = "jet",
                   cblab = "P wave velocity [km/s]")
-plt.savefig("model_RTM.png", dpi = 200)
+plt.savefig("model_FWI.png", dpi = 200)
 plt.show()

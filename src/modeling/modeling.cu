@@ -335,14 +335,14 @@ __global__ void compute_pressure(const float * __restrict__ Vp, float * __restri
     int j = (int) (index - k*nxx_nzz) / nzz;   
     int i = (int) (index - j*nzz - k*nxx_nzz); 
 
-    const int base_j = j*nzz;
-    const int base_k = k*nxx_nzz;
+    const int bsj = j*nzz;
+    const int bsk = k*nxx_nzz;
 
-    const int jm4 = base_j - 4*nzz, jm3 = base_j - 3*nzz, jm2 = base_j - 2*nzz, jm1 = base_j - nzz;
-    const int jp4 = base_j + 4*nzz, jp3 = base_j + 3*nzz, jp2 = base_j + 2*nzz, jp1 = base_j + nzz;
+    const int jm4 = bsj - 4*nzz, jm3 = bsj - 3*nzz, jm2 = bsj - 2*nzz, jm1 = bsj - nzz;
+    const int jp4 = bsj + 4*nzz, jp3 = bsj + 3*nzz, jp2 = bsj + 2*nzz, jp1 = bsj + nzz;
 
-    const int km4 = base_k - 4*nxx_nzz, km3 = base_k - 3*nxx_nzz, km2 = base_k - 2*nxx_nzz, km1 = base_k - nxx_nzz;     
-    const int kp4 = base_k + 4*nxx_nzz, kp3 = base_k + 3*nxx_nzz, kp2 = base_k + 2*nxx_nzz, kp1 = base_k + nxx_nzz;     
+    const int km4 = bsk - 4*nxx_nzz, km3 = bsk - 3*nxx_nzz, km2 = bsk - 2*nxx_nzz, km1 = bsk - nxx_nzz;     
+    const int kp4 = bsk + 4*nxx_nzz, kp3 = bsk + 3*nxx_nzz, kp2 = bsk + 2*nxx_nzz, kp1 = bsk + nxx_nzz;     
 
     if ((index == 0) && (tId < nt))
         atomicAdd(&P[sIdz + sIdx*nzz + sIdy*nxx*nzz], idh3*wavelet[tId]);
@@ -351,23 +351,23 @@ __global__ void compute_pressure(const float * __restrict__ Vp, float * __restri
     {
         const float vp2 = Vp[index]*Vp[index];     
 
-        float d2P_dx2 = (-FDM1*(P[i + jm4 + base_k] + P[i + jp4 + base_k])
-                         +FDM2*(P[i + jm3 + base_k] + P[i + jp3 + base_k])
-                         -FDM3*(P[i + jm2 + base_k] + P[i + jp2 + base_k])
-                         +FDM4*(P[i + jm1 + base_k] + P[i + jp1 + base_k])
-                         -FDM5*(P[i + base_j + base_k]))*idh2;
+        float d2P_dx2 = (-FDM1*(P[i + jm4 + bsk] + P[i + jp4 + bsk])
+                         +FDM2*(P[i + jm3 + bsk] + P[i + jp3 + bsk])
+                         -FDM3*(P[i + jm2 + bsk] + P[i + jp2 + bsk])
+                         +FDM4*(P[i + jm1 + bsk] + P[i + jp1 + bsk])
+                         -FDM5*(P[i + bsj + bsk]))*idh2;
 
-        float d2P_dy2 = (-FDM1*(P[i + base_j + km4] + P[i + base_j + kp4])
-                         +FDM2*(P[i + base_j + km3] + P[i + base_j + kp3])
-                         -FDM3*(P[i + base_j + km2] + P[i + base_j + kp2])
-                         +FDM4*(P[i + base_j + km1] + P[i + base_j + kp1])
-                         -FDM5*(P[i + base_j + base_k]))*idh2;
+        float d2P_dy2 = (-FDM1*(P[i + bsj + km4] + P[i + bsj + kp4])
+                         +FDM2*(P[i + bsj + km3] + P[i + bsj + kp3])
+                         -FDM3*(P[i + bsj + km2] + P[i + bsj + kp2])
+                         +FDM4*(P[i + bsj + km1] + P[i + bsj + kp1])
+                         -FDM5*(P[i + bsj + bsk]))*idh2;
 
-        float d2P_dz2 = (-FDM1*(P[(i-4) + base_j + base_k] + P[(i+4) + base_j + base_k])
-                         +FDM2*(P[(i-3) + base_j + base_k] + P[(i+3) + base_j + base_k])
-                         -FDM3*(P[(i-2) + base_j + base_k] + P[(i+2) + base_j + base_k])
-                         +FDM4*(P[(i-1) + base_j + base_k] + P[(i+1) + base_j + base_k])
-                         -FDM5*(P[i + base_j + base_k]))*idh2;
+        float d2P_dz2 = (-FDM1*(P[(i-4) + bsj + bsk] + P[(i+4) + bsj + bsk])
+                         +FDM2*(P[(i-3) + bsj + bsk] + P[(i+3) + bsj + bsk])
+                         -FDM3*(P[(i-2) + bsj + bsk] + P[(i+2) + bsj + bsk])
+                         +FDM4*(P[(i-1) + bsj + bsk] + P[(i+1) + bsj + bsk])
+                         -FDM5*(P[i + bsj + bsk]))*idh2;
 
         Pold[index] = dt*dt*vp2*(d2P_dx2 + d2P_dy2 + d2P_dz2) + 2.0f*P[index] - Pold[index];
         
