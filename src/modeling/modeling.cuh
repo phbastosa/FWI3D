@@ -6,12 +6,6 @@
 
 # include "../geometry/geometry.hpp"
 
-# define FDM1 0.001785714285 
-# define FDM2 0.025396825396  
-# define FDM3 0.200000000000
-# define FDM4 1.600000000000
-# define FDM5 2.847222222222
-
 # define WIDTH 80
 # define NTHREADS 256
 

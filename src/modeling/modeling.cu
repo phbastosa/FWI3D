@@ -327,6 +327,12 @@ __global__ void compute_pressure(const float * __restrict__ Vp, float * __restri
                                  int sIdx, int sIdy, int sIdz, int tId, int nt, int nb, int nxx, 
                                  int nyy, int nzz, float idh2, float idh3, float dt, bool ABC)
 {
+    const float FDM1 = 0.001785714285f;
+    const float FDM2 = 0.025396825396f;
+    const float FDM3 = 0.200000000000f;
+    const float FDM4 = 1.600000000000f;
+    const float FDM5 = 2.847222222222f;
+
     int index = blockIdx.x * blockDim.x + threadIdx.x;
 
     const int nxx_nzz = nxx*nzz;

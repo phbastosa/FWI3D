@@ -135,6 +135,12 @@ __global__ void cross_correlation(float * __restrict__ Ps, const float * __restr
                                   float * __restrict__ Prold, const float * __restrict__ Vp, float * __restrict__ image, 
                                   float * __restrict__ sumPs, int nxx, int nyy, int nzz, int nt, float idh2, float dt)
 {
+    const float FDM1 = 0.001785714285f;
+    const float FDM2 = 0.025396825396f;
+    const float FDM3 = 0.200000000000f;
+    const float FDM4 = 1.600000000000f;
+    const float FDM5 = 2.847222222222f;
+
     int index = blockIdx.x * blockDim.x + threadIdx.x;
 
     const int nxx_nzz = nxx*nzz;
